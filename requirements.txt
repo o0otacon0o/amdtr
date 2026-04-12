@@ -1,0 +1,22 @@
+# amdtr Dependencies - Phase 1: Foundation
+PyQt6>=6.6.0
+
+# Editor Engine
+PyQt6-QScintilla>=2.14.0    # QScintilla für PyQt6
+
+# Preview Engine
+PyQt6-WebEngine>=6.6.0      # QWebEngineView für Markdown Preview
+
+# Export Engine
+weasyprint>=62.0             # HTML → PDF Export ohne externe Binaries
+
+# Build & Deployment
+pyinstaller>=6.5.0           # Python Bundling zu Executables
+
+# File I/O
+chardet>=5.0                 # Encoding-Detection für Textdateien
+
+# Development Dependencies (optional)
+# pytest>=7.0                # Unit Testing
+# black>=23.0                # Code Formatting
+# mypy>=1.0                  # Type Checking

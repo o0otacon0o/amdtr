@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>amdtr Preview</title>
+    <!-- Phase 2: CSS Assets via Local Vendor Path -->
+    <link rel="stylesheet" href="vendor/katex.min.css">
+    <link id="syntax-theme" rel="stylesheet" href="vendor/github.min.css">
+    
+    <style>
+        :root {
+            --text: #24292f;
+            --bg: #ffffff;
+            --heading: #0969da;
+            --code-bg: #f6f8fa;
+            --link: #0969da;
+            --blockquote: #656d76;
+            --border: #d1d9e0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--text);
+            background: var(--bg);
+            margin: 0;
+            padding: 24px;
+            max-width: none;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--heading);
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+        h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+        h3 { font-size: 1.25em; }
+        h4 { font-size: 1em; }
+        h5 { font-size: 0.875em; }
+        h6 { font-size: 0.85em; color: var(--blockquote); }
+        
+        p { margin-top: 0; margin-bottom: 16px; }
+        
+        code {
+            background: var(--code-bg);
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        
+        pre {
+            background: var(--code-bg);
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            border-radius: 6px;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        
+        pre code {
+            background: transparent;
+            border: 0;
+            padding: 0;
+            margin: 0;
+            border-radius: 0;
+        }
+        
+        blockquote {
+            padding: 0 1em;
+            color: var(--blockquote);
+            border-left: 0.25em solid var(--border);
+            margin: 0 0 16px 0;
+        }
+        
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        ul, ol {
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }
+        
+        li + li {
+            margin-top: 0.25em;
+        }
+        
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+        
+        table th, table td {
+            padding: 6px 13px;
+            border: 1px solid var(--border);
+        }
+        
+        table th {
+            font-weight: 600;
+        }
+        
+        hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: var(--border);
+            border: 0;
+        }
+        
+        /* Mermaid-spezifische Styles */
+        .mermaid {
+            text-align: center;
+            margin: 16px 0;
+        }
+        
+        /* Math-Rendering */
+        .katex-display {
+            margin: 1em 0;
+            text-align: center;
+        }
+        
+        /* Line-Referenzen für Scroll-Sync */
+        [data-line] {
+            position: relative;
+            scroll-margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <p>Loading preview...</p>
+    </div>
+    
+    <!-- Phase 2: JavaScript Assets via Local Vendor Path -->
+    <script src="vendor/marked.min.js"></script>
+    <script src="vendor/katex.min.js"></script>
+    <script src="vendor/auto-render.min.js"></script>
+    <script src="vendor/highlight.min.js"></script>
+    <script src="vendor/mermaid.min.js"></script>
+    
+    <!-- QWebChannel for Python ↔ JavaScript communication -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    
+    <script>
+        // Phase 2: Vollständige 150ms-Preview-Pipeline
+        class PreviewController {
+            constructor() {
+                this.content = document.getElementById('content');
+                this.bridge = null;
+                this.currentMarkdown = '';
+                this.currentLineMap = new Map();
+                this.scrollLock = false;
+                
+                this.initLibraries();
+                this.setupScrollSync();
+            }
+            
+            async initLibraries() {
+                // Marked.js Konfiguration mit Custom Renderer für Line-Mapping
+                if (typeof marked !== 'undefined') {
+                    const renderer = new marked.Renderer();
+                    
+                    // Hilfsfunktion für Line-Mapping
+                    const withLine = (html, line) => {
+                        if (line === undefined) return html;
+                        return html.replace(/^<([a-z1-6]+)/, `<$1 data-line="${line}"`);
+                    };
+
+                    renderer.heading = (text, level, raw) => {
+                        const line = this.getLineNumber(raw);
+                        return `<h${level} data-line="${line}">${text}</h${level}>`;
+                    };
+
+                    renderer.paragraph = (text) => {
+                        const line = this.getLineNumber(text);
+                        return `<p data-line="${line}">${text}</p>`;
+                    };
+
+                    renderer.listitem = (text) => {
+                        const line = this.getLineNumber(text);
+                        return `<li data-line="${line}">${text}</li>`;
+                    };
+
+                    renderer.code = (code, lang) => {
+                        const line = this.getLineNumber(code);
+                        const highlighted = (lang && hljs.getLanguage(lang)) 
+                            ? hljs.highlight(code, { language: lang }).value 
+                            : hljs.highlightAuto(code).value;
+                        return `<pre data-line="${line}"><code class="language-${lang || ''}">${highlighted}</code></pre>`;
+                    };
+
+                    marked.setOptions({
+                        renderer: renderer,
+                        breaks: true,
+                        gfm: true
+                    });
+                }
+                
+                // Mermaid Konfiguration
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.initialize({
+                        startOnLoad: false,
+                        theme: 'default',
+                        securityLevel: 'loose',
+                        fontFamily: 'inherit'
+                    });
+                }
+                
+                console.log('Libraries initialized');
+            }
+            
+            // QWebChannel connection
+            initBridge() {
+                if (typeof qt !== 'undefined' && qt.webChannelTransport) {
+                    new QWebChannel(qt.webChannelTransport, (channel) => {
+                        this.bridge = channel.objects.bridge;
+                        console.log('Bridge connected');
+                    });
+                } else {
+                    console.log('Running in standalone mode');
+                }
+            }
+            
+            // Haupt-Rendering-Pipeline
+            async updateContent(markdown) {
+                console.log('updateContent called with:', typeof markdown, markdown.length);
+                
+                if (this.currentMarkdown === markdown) {
+                    console.log('Content unchanged, skipping update');
+                    return;
+                }
+                
+                try {
+                    this.currentMarkdown = markdown;
+                    
+                    if (!markdown.trim()) {
+                        this.content.innerHTML = '<p class="loading">No content</p>';
+                        return;
+                    }
+                    
+                    // Debug: Verfügbare JavaScript-Libraries prüfen
+                    console.log('Libraries available:');
+                    console.log('- marked:', typeof marked !== 'undefined');
+                    console.log('- mermaid:', typeof mermaid !== 'undefined');
+                    console.log('- hljs:', typeof hljs !== 'undefined');
+                    console.log('- renderMathInElement:', typeof renderMathInElement !== 'undefined');
+                    
+                    // 1. Math-Preprocessing
+                    const processedMd = this.preprocessMath(markdown);
+                    console.log('Processed markdown length:', processedMd.length);
+                    
+                    // 2. Markdown → HTML
+                    let html = '';
+                    if (typeof marked !== 'undefined') {
+                        console.log('Using marked.js for parsing');
+                        html = marked.parse(processedMd);
+                        console.log('HTML output length:', html.length);
+                    } else {
+                        console.error('marked.js not available! Using fallback');
+                        html = `<pre class="fallback">${this.escapeHtml(markdown)}</pre>`;
+                    }
+                    
+                    // 3. Line-Mapping für Scroll-Sync
+                    html = this.addLineMapping(html);
+                    
+                    // 4. DOM Update
+                    this.content.innerHTML = html;
+                    console.log('DOM updated with HTML');
+                    
+                    // 5. Post-Processing
+                    await this.postProcess();
+                    
+                    console.log('Preview updated successfully');
+                    
+                } catch (error) {
+                    console.error('Preview update failed:', error);
+                    this.content.innerHTML = `<div class="error">Rendering error: ${error.message}</div>`;
+                }
+            }
+            
+            async reRenderMermaid() {
+                // In einer echten Pipeline müssten wir das Markdown neu parsen,
+                // aber für den Theme-Wechsel reicht es, updateContent mit dem 
+                // bestehenden Markdown erneut aufzurufen (ohne Cache-Check).
+                const md = this.currentMarkdown;
+                this.currentMarkdown = ''; // Cache invalidieren
+                await this.updateContent(md);
+            }
+            
+            preprocessMath(markdown) {
+                // Einfacher Math-Schutz vor Marked.js
+                return markdown
+                    .replace(/\$\$(.*?)\$\$/gs, '<div class="math-display">$$1$$</div>')
+                    .replace(/\$([^$\n]+?)\$/g, '<span class="math-inline">$1</span>');
+            }
+            
+            addLineMapping(html) {
+                // Die meisten Tags haben bereits data-line durch den Custom Renderer.
+                // Hier können wir noch Tags nachbehandeln, die nicht durch den Renderer gehen.
+                return html;
+            }
+
+            getLineNumber(textSnippet) {
+                if (!textSnippet || !this.currentMarkdown) return 1;
+                
+                const trimmed = textSnippet.trim();
+                // Suche ab dem letzten gefundenen Index (sequenzielles Parsing)
+                let index = this.currentMarkdown.indexOf(trimmed, this.lastSearchIndex);
+                
+                // Fallback: Wenn nicht gefunden, suche von vorne (vielleicht wurde Text verschoben)
+                if (index === -1) {
+                    index = this.currentMarkdown.indexOf(trimmed);
+                }
+                
+                if (index === -1) return 1;
+                
+                // Merke Position für nächsten Aufruf
+                this.lastSearchIndex = index + trimmed.length;
+                
+                return this.currentMarkdown.substring(0, index).split('\n').length;
+            }
+            
+            async postProcess() {
+                // 1. Code-Highlighting
+                if (typeof hljs !== 'undefined') {
+                    hljs.highlightAll();
+                }
+                
+                // 2. KaTeX Math-Rendering
+                if (typeof renderMathInElement !== 'undefined') {
+                    renderMathInElement(this.content, {
+                        delimiters: [
+                            { left: "$$", right: "$$", display: true },
+                            { left: "$", right: "$", display: false }
+                        ]
+                    });
+                }
+                
+                // 3. Mermaid-Diagramme
+                await this.renderMermaid();
+            }
+            
+            async renderMermaid() {
+                if (typeof mermaid === 'undefined') return;
+                
+                const mermaidElements = this.content.querySelectorAll('code.language-mermaid');
+                
+                for (let i = 0; i < mermaidElements.length; i++) {
+                    const element = mermaidElements[i];
+                    const code = element.textContent;
+                    
+                    try {
+                        // Eindeutige ID ohne Zeitstempel-Abhängigkeit
+                        const diagId = `mermaid-diag-${i}`;
+                        const { svg } = await mermaid.render(diagId, code);
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'mermaid';
+                        wrapper.innerHTML = svg;
+                        element.parentElement.replaceWith(wrapper);
+                    } catch (error) {
+                        console.error('Mermaid rendering failed:', error);
+                        element.textContent = `Mermaid error: ${error.message}`;
+                    }
+                }
+            }
+            
+            // Scroll-Synchronisation
+            scrollToLine(line) {
+                if (this.scrollLock) return;
+                
+                const element = this.content.querySelector(`[data-line="${line}"]`);
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                } else {
+                    // Fallback: prozentuale Position
+                    const lines = this.currentMarkdown.split('\n').length;
+                    const percentage = (line / lines) * 100;
+                    const targetY = (document.body.scrollHeight * percentage) / 100;
+                    window.scrollTo({ top: targetY, behavior: 'smooth' });
+                }
+            }
+            
+            setupScrollSync() {
+                let scrollTimeout = null;
+                
+                window.addEventListener('scroll', () => {
+                    if (this.scrollLock) return;
+                    
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        const scrollPosition = window.pageYOffset;
+                        const elements = this.content.querySelectorAll('[data-line]');
+                        
+                        for (let element of elements) {
+                            const rect = element.getBoundingClientRect();
+                            if (rect.top >= -50 && rect.top <= 100) {
+                                const line = parseInt(element.getAttribute('data-line'), 10);
+                                if (this.bridge && this.bridge.on_preview_scroll) {
+                                    this.bridge.on_preview_scroll(line);
+                                }
+                                break;
+                            }
+                        }
+                    }, 100);
+                });
+            }
+            
+            // Theme-System
+            updateTheme(cssVars) {
+                const root = document.documentElement;
+                for (const [property, value] of Object.entries(cssVars)) {
+                    if (property === '--syntax') {
+                        const themeLink = document.getElementById('syntax-theme');
+                        if (themeLink) {
+                            themeLink.href = value === 'dark' ? 'vendor/github-dark.min.css' : 'vendor/github.min.css';
+                        }
+                    } else if (property === '--mermaid') {
+                        if (typeof mermaid !== 'undefined') {
+                            console.log('Switching mermaid theme to:', value);
+                            mermaid.initialize({ 
+                                startOnLoad: false,
+                                theme: value,
+                                securityLevel: 'loose',
+                                fontFamily: 'inherit'
+                            });
+                            // Re-render existing diagrams if possible
+                            this.reRenderMermaid();
+                        }
+                    } else {
+                        root.style.setProperty(property, value);
+                    }
+                }
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // Lock-Mechanismus für bidirektionale Scroll-Sync
+            lockScroll(duration = 500) {
+                this.scrollLock = true;
+                setTimeout(() => { this.scrollLock = false; }, duration);
+            }
+        }
+        
+        // Initialize preview
+        const preview = new PreviewController();
+        
+        // Connect to Python when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            preview.initBridge();
+        });
+        
+        // Global functions für Python-Bridge
+        window.updateMarkdown = (md) => preview.updateContent(md);
+        window.scrollToLine = (line) => {
+            preview.lockScroll();
+            preview.scrollToLine(line);
+        };
+        window.updateTheme = (vars) => preview.updateTheme(vars);
+        
+        console.log('amdtr Preview Pipeline initialized');
+    </script>
+</body>
+</html>

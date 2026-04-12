@@ -1,0 +1,57 @@
+{
+    "name": "GitHub Light",
+    "dark": false,
+    "editor": {
+        "background": "#ffffff",
+        "foreground": "#24292f",
+        "selection_bg": "#add6ff",
+        "selection_fg": "#24292f",
+        "line_number_bg": "#ffffff",
+        "line_number_fg": "#afb8c1",
+        "current_line": "#f6f8fa",
+        "tokens": {
+            "DEFAULT": { "color": "#24292f" },
+            "HEADING_1": { "color": "#0969da", "bold": true },
+            "HEADING_2": { "color": "#0969da", "bold": true },
+            "HEADING_3": { "color": "#0969da", "bold": true },
+            "HEADING_4": { "color": "#0969da", "bold": true },
+            "HEADING_5": { "color": "#0969da", "bold": true },
+            "HEADING_6": { "color": "#0969da", "bold": true },
+            "BOLD": { "color": "#24292f", "bold": true },
+            "ITALIC": { "color": "#24292f", "italic": true },
+            "BOLD_ITALIC": { "color": "#24292f", "bold": true, "italic": true },
+            "INLINE_CODE": { "color": "#af3d10" },
+            "CODE_FENCE": { "color": "#6e7781" },
+            "MERMAID_FENCE": { "color": "#8250df" },
+            "LINK_TEXT": { "color": "#0969da" },
+            "LINK_URL": { "color": "#6e7781" },
+            "WIKILINK": { "color": "#0969da" },
+            "WIKILINK_BROKEN": { "color": "#cf222e" },
+            "BLOCKQUOTE": { "color": "#6e7781", "italic": true },
+            "LIST_MARKER": { "color": "#0969da" },
+            "HR": { "color": "#d0d7de" },
+            "FRONTMATTER": { "color": "#6e7781" }
+        }
+    },
+    "ui": {
+        "sidebar_bg": "#f6f8fa",
+        "sidebar_fg": "#24292f",
+        "tab_active_bg": "#ffffff",
+        "tab_active_fg": "#24292f",
+        "tab_inactive_bg": "#f6f8fa",
+        "tab_inactive_fg": "#6e7781",
+        "border": "#d0d7de",
+        "button_bg": "#ebeff2",
+        "button_fg": "#24292f"
+    },
+    "preview": {
+        "background": "#ffffff",
+        "foreground": "#24292f",
+        "link": "#0969da",
+        "heading": "#0969da",
+        "code_bg": "#f6f8fa",
+        "border": "#d0d7de",
+        "syntax": "light",
+        "mermaid": "default"
+    }
+}

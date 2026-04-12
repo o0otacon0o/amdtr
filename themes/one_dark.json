@@ -1,0 +1,57 @@
+{
+    "name": "One Dark",
+    "dark": true,
+    "editor": {
+        "background": "#282c34",
+        "foreground": "#abb2bf",
+        "selection_bg": "#3e4451",
+        "selection_fg": "#abb2bf",
+        "line_number_bg": "#282c34",
+        "line_number_fg": "#4b5263",
+        "current_line": "#2c323c",
+        "tokens": {
+            "DEFAULT": { "color": "#abb2bf" },
+            "HEADING_1": { "color": "#e06c75", "bold": true },
+            "HEADING_2": { "color": "#e06c75", "bold": true },
+            "HEADING_3": { "color": "#e06c75", "bold": true },
+            "HEADING_4": { "color": "#e06c75", "bold": true },
+            "HEADING_5": { "color": "#e06c75", "bold": true },
+            "HEADING_6": { "color": "#e06c75", "bold": true },
+            "BOLD": { "color": "#d19a66", "bold": true },
+            "ITALIC": { "color": "#c678dd", "italic": true },
+            "BOLD_ITALIC": { "color": "#d19a66", "bold": true, "italic": true },
+            "INLINE_CODE": { "color": "#98c379" },
+            "CODE_FENCE": { "color": "#5c6370" },
+            "MERMAID_FENCE": { "color": "#d19a66" },
+            "LINK_TEXT": { "color": "#61afef" },
+            "LINK_URL": { "color": "#5c6370" },
+            "WIKILINK": { "color": "#61afef" },
+            "WIKILINK_BROKEN": { "color": "#e06c75" },
+            "BLOCKQUOTE": { "color": "#5c6370", "italic": true },
+            "LIST_MARKER": { "color": "#e06c75" },
+            "HR": { "color": "#3e4451" },
+            "FRONTMATTER": { "color": "#5c6370" }
+        }
+    },
+    "ui": {
+        "sidebar_bg": "#21252b",
+        "sidebar_fg": "#abb2bf",
+        "tab_active_bg": "#282c34",
+        "tab_active_fg": "#abb2bf",
+        "tab_inactive_bg": "#21252b",
+        "tab_inactive_fg": "#5c6370",
+        "border": "#181a1f",
+        "button_bg": "#3e4451",
+        "button_fg": "#abb2bf"
+    },
+    "preview": {
+        "background": "#282c34",
+        "foreground": "#abb2bf",
+        "link": "#61afef",
+        "heading": "#e06c75",
+        "code-bg": "#2c323c",
+        "border": "#3e4451",
+        "syntax": "dark",
+        "mermaid": "dark"
+    }
+}
