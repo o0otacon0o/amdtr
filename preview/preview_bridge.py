@@ -1,11 +1,11 @@
 """
-PreviewBridge — QWebChannel-basierte Kommunikation zwischen Python und JS.
+PreviewBridge — QWebChannel-based communication between Python and JS.
 
-Verwaltet:
-- Markdown → HTML Übertragung
-- Scroll-Synchronisation 
-- Debounced Updates (150ms)
-- Theme-Injection
+Manages:
+- Markdown → HTML transfer
+- Scroll synchronization 
+- Debounced updates (150ms)
+- Theme injection
 """
 
 from __future__ import annotations
@@ -15,23 +15,23 @@ from PyQt6.QtWebChannel import QWebChannel
 
 class PreviewBridge(QObject):
     """
-    Bridge zwischen Python (Editor) und JavaScript (Preview).
+    Bridge between Python (editor) and JavaScript (preview).
     
-    Verwendet QWebChannel für bidirektionale Kommunikation.
+    Uses QWebChannel for bidirectional communication.
     """
     
-    # Signals für JavaScript → Python
+    # Signals for JavaScript → Python
     scroll_to_line_requested = pyqtSignal(int)
     
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         
-        # Debounce-Timer für Markdown-Updates
+        # Debounce timer for Markdown updates
         self._update_timer = QTimer(self)
         self._update_timer.setSingleShot(True)
         self._update_timer.timeout.connect(self._send_pending_markdown)
         
-        # Aktueller Zustand
+        # Current state
         self._pending_markdown = ""
         self._current_line = 0
         self._scroll_lock = False
@@ -39,8 +39,8 @@ class PreviewBridge(QObject):
     @pyqtSlot(str)
     def update_markdown(self, markdown: str) -> None:
         """
-        Aktualisiert Markdown-Inhalt mit Debouncing.
-        Wird vom Editor aufgerufen bei Text-Änderungen.
+        Updates Markdown content with debouncing.
+        Called by the editor on text changes.
         """
         self._pending_markdown = markdown
         self._update_timer.start(150)  # 150ms Debounce
@@ -48,8 +48,8 @@ class PreviewBridge(QObject):
     @pyqtSlot(int)
     def scroll_to_line(self, line: int) -> None:
         """
-        Scrollt Preview zur angegebenen Zeile.
-        Wird vom Editor aufgerufen bei Cursor-Bewegung.
+        Scrolls preview to the specified line.
+        Called by the editor on cursor movement.
         """
         if self._scroll_lock:
             return
@@ -72,19 +72,19 @@ class PreviewBridge(QObject):
     @pyqtSlot(int)
     def on_preview_scroll(self, line: int) -> None:
         """
-        JavaScript → Python: Preview wurde gescrollt.
-        Synchronisiert Editor-Viewport.
+        JavaScript → Python: Preview was scrolled.
+        Synchronizes editor viewport.
         """
         self._scroll_lock = True
         self.scroll_to_line_requested.emit(line)
         
-        # Lock nach kurzer Verzögerung wieder aufheben
+        # Release lock after a short delay
         QTimer.singleShot(100, lambda: setattr(self, '_scroll_lock', False))
         
     @pyqtSlot(dict)
     def set_theme_vars(self, vars_dict: dict) -> None:
         """
-        Injiziert Theme-CSS-Variablen in die Preview.
+        Injects theme CSS variables into the preview.
         """
         if hasattr(self, '_web_page') and self._web_page:
             import json
@@ -94,8 +94,8 @@ class PreviewBridge(QObject):
         
     def _send_pending_markdown(self) -> None:
         """
-        Sendet gepufferten Markdown-Inhalt an JavaScript.
-        Wird vom Debounce-Timer aufgerufen.
+        Sends buffered Markdown content to JavaScript.
+        Called by the debounce timer.
         """
         if not self._pending_markdown:
             print(f"[DEBUG] No pending markdown to send")
@@ -107,7 +107,7 @@ class PreviewBridge(QObject):
             
         print(f"[DEBUG] Sending markdown: {len(self._pending_markdown)} chars")
         
-        # JSON-basierte sichere Übertragung
+        # JSON-based secure transfer
         import json
         markdown_json = json.dumps(self._pending_markdown)
         
@@ -134,14 +134,14 @@ class PreviewBridge(QObject):
         
     def set_web_page(self, page) -> None:
         """
-        Setzt WebEngine-Page für JavaScript-Aufrufe.
-        Wird von PreviewPanel aufgerufen.
+        Sets WebEngine page for JavaScript calls.
+        Called by PreviewPanel.
         """
         self._web_page = page
         
     def _execute_javascript(self, js_code: str) -> None:
         """
-        Führt JavaScript-Code in der WebView aus.
+        Executes JavaScript code in the WebView.
         """
         if hasattr(self, '_web_page') and self._web_page:
             self._web_page.runJavaScript(js_code)
@@ -149,8 +149,8 @@ class PreviewBridge(QObject):
             
     def get_web_channel(self) -> QWebChannel:
         """
-        Erstellt QWebChannel mit diesem Bridge-Objekt.
-        Wird vom PreviewPanel verwendet.
+        Creates QWebChannel with this bridge object.
+        Used by PreviewPanel.
         """
         channel = QWebChannel()
         channel.registerObject("bridge", self)

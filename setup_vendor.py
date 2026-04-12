@@ -2,7 +2,7 @@ import urllib.request
 import os
 from pathlib import Path
 
-# Konfiguration
+# Configuration
 VENDOR_DIR = Path("resources/vendor")
 DEPENDENCIES = {
     # JavaScript
@@ -21,26 +21,26 @@ DEPENDENCIES = {
 def setup():
     print(f"--- amdtr Vendor Setup ---")
     
-    # Verzeichnis erstellen
+    # Create directory
     if not VENDOR_DIR.exists():
-        print(f"Erstelle Verzeichnis: {VENDOR_DIR}")
+        print(f"Creating directory: {VENDOR_DIR}")
         VENDOR_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Dateien herunterladen
+    # Download files
     for filename, url in DEPENDENCIES.items():
         target_path = VENDOR_DIR / filename
-        print(f"Lade herunter: {filename}...", end=" ", flush=True)
+        print(f"Downloading: {filename}...", end=" ", flush=True)
         try:
-            # User-Agent hinzufügen, um Blockaden zu vermeiden
+            # Add User-Agent to avoid blocks
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
                 with open(target_path, 'wb') as f:
                     f.write(response.read())
-            print("ERFOLG")
+            print("SUCCESS")
         except Exception as e:
-            print(f"FEHLER: {e}")
+            print(f"ERROR: {e}")
 
-    print(f"\nSetup abgeschlossen. Alle Dateien befinden sich in {VENDOR_DIR}")
+    print(f"\nSetup complete. All files are located in {VENDOR_DIR}")
 
 if __name__ == "__main__":
     setup()

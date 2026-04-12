@@ -1,11 +1,11 @@
 """
-SessionManager — Verwaltung der Sitzungs-Persistierung.
+SessionManager — Management of session persistence.
 
-Kapselt:
-- Offene Tabs und deren Zustand
-- Cursor- und Scroll-Positionen  
-- Crash-Recovery
-- Workspace-Session
+Encapsulates:
+- Open tabs and their state
+- Cursor and scroll positions  
+- Crash recovery
+- Workspace session
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from PyQt6.QtCore import QObject, QTimer
 
 @dataclass
 class TabSession:
-    """Zustand eines einzelnen Tabs."""
+    """State of a single tab."""
     file_path: str
     cursor_line: int = 0
     cursor_column: int = 0
@@ -28,7 +28,7 @@ class TabSession:
 
 @dataclass
 class WorkspaceSession:
-    """Zustand einer Workspace-Sitzung."""
+    """State of a workspace session."""
     workspace_root: str
     open_tabs: list[TabSession]
     active_tab_index: int = -1
@@ -42,12 +42,12 @@ class WorkspaceSession:
 
 class SessionManager(QObject):
     """
-    Verwaltet Session-Persistierung für Crash-Recovery.
+    Manages session persistence for crash recovery.
     
-    Speichert automatisch:
-    - Offene Dateien und deren Editor-Zustand
-    - Window-Geometrie und Panel-Größen
-    - Aktiver Tab und Cursor-Positionen
+    Automatically saves:
+    - Open files and their editor state
+    - Window geometry and panel sizes
+    - Active tab and cursor positions
     """
     
     def __init__(self, parent: QObject | None = None) -> None:
@@ -55,28 +55,28 @@ class SessionManager(QObject):
         self._current_session: Optional[WorkspaceSession] = None
         self._auto_save_timer = QTimer(self)
         self._auto_save_timer.timeout.connect(self._auto_save_session)
-        self._auto_save_timer.start(5000)  # alle 5 Sekunden speichern
+        self._auto_save_timer.start(5000)  # save every 5 seconds
         
     def start_workspace_session(self, workspace_root: Path) -> None:
-        """Startet eine neue Workspace-Session."""
+        """Starts a new workspace session."""
         self._current_session = WorkspaceSession(str(workspace_root))
         self._load_session()
         
     def end_session(self) -> None:
-        """Beendet die aktuelle Session und speichert sie."""
+        """Ends the current session and saves it."""
         if self._current_session:
             self._save_session()
             self._current_session = None
             
     def add_tab(self, file_path: Path, is_active: bool = False) -> None:
-        """Fügt einen Tab zur Session hinzu."""
+        """Adds a tab to the session."""
         if not self._current_session:
             return
             
-        # Vorhandenen Tab-Eintrag entfernen
+        # Remove existing tab entry
         self._remove_tab(file_path)
         
-        # Neuen Tab hinzufügen
+        # Add new tab
         tab = TabSession(
             file_path=str(file_path),
             is_active=is_active
@@ -87,11 +87,11 @@ class SessionManager(QObject):
             self._current_session.active_tab_index = len(self._current_session.open_tabs) - 1
             
     def remove_tab(self, file_path: Path) -> None:
-        """Entfernt einen Tab aus der Session."""
+        """Removes a tab from the session."""
         self._remove_tab(file_path)
         
     def update_tab_state(self, file_path: Path, cursor_line: int, cursor_column: int, scroll_position: int) -> None:
-        """Aktualisiert Editor-Zustand eines Tabs."""
+        """Updates the editor state of a tab."""
         if not self._current_session:
             return
             
@@ -103,7 +103,7 @@ class SessionManager(QObject):
                 break
                 
     def set_active_tab(self, file_path: Path) -> None:
-        """Setzt den aktiven Tab."""
+        """Sets the active tab."""
         if not self._current_session:
             return
             
@@ -113,7 +113,7 @@ class SessionManager(QObject):
                 self._current_session.active_tab_index = i
                 
     def get_session_data(self) -> Optional[dict[str, Any]]:
-        """Gibt die aktuelle Session als Dictionary zurück."""
+        """Returns the current session as a dictionary."""
         if not self._current_session:
             return None
             
@@ -126,7 +126,7 @@ class SessionManager(QObject):
         }
         
     def restore_from_data(self, data: dict[str, Any]) -> WorkspaceSession:
-        """Erstellt Session aus Dictionary-Daten."""
+        """Creates a session from dictionary data."""
         workspace_root = data.get('workspace_root', '')
         session = WorkspaceSession(workspace_root)
         
@@ -134,7 +134,7 @@ class SessionManager(QObject):
         session.sidebar_width = data.get('sidebar_width', 260)
         session.preview_visible = data.get('preview_visible', True)
         
-        # Tabs wiederherstellen
+        # Restore tabs
         for tab_data in data.get('open_tabs', []):
             tab = TabSession(
                 file_path=tab_data['file_path'],
@@ -148,7 +148,7 @@ class SessionManager(QObject):
         return session
     
     def _get_session_file_path(self) -> Optional[Path]:
-        """Pfad zur Session-Datei im Workspace."""
+        """Path to the session file in the workspace."""
         if not self._current_session:
             return None
             
@@ -156,7 +156,7 @@ class SessionManager(QObject):
         return workspace_root / '.amdtr' / 'session.json'
         
     def _save_session(self) -> None:
-        """Speichert Session in .amdtr/session.json"""
+        """Saves session in .amdtr/session.json"""
         session_file = self._get_session_file_path()
         if not session_file:
             return
@@ -170,10 +170,10 @@ class SessionManager(QObject):
                     encoding='utf-8'
                 )
         except (OSError, json.JSONEncodeError):
-            pass  # Session-Speichern sollte nie die App zum Absturz bringen
+            pass  # Saving session should never crash the app
             
     def _load_session(self) -> None:
-        """Lädt Session aus .amdtr/session.json"""
+        """Loads session from .amdtr/session.json"""
         session_file = self._get_session_file_path()
         if not session_file or not session_file.exists():
             return
@@ -183,15 +183,15 @@ class SessionManager(QObject):
             restored_session = self.restore_from_data(data)
             self._current_session = restored_session
         except (OSError, json.JSONDecodeError):
-            pass  # Session-Laden sollte nie die App zum Absturz bringen
+            pass  # Loading session should never crash the app
             
     def _auto_save_session(self) -> None:
-        """Auto-Save Timer Callback."""
+        """Auto-save timer callback."""
         if self._current_session:
             self._save_session()
             
     def _remove_tab(self, file_path: Path) -> None:
-        """Hilfsmethode: Entfernt Tab aus der Liste."""
+        """Helper method: removes a tab from the list."""
         if not self._current_session:
             return
             
@@ -201,7 +201,7 @@ class SessionManager(QObject):
             if tab.file_path != file_path_str
         ]
         
-        # Active-Index anpassen wenn nötig
+        # Adjust active index if necessary
         if (self._current_session.active_tab_index >= 
             len(self._current_session.open_tabs)):
             self._current_session.active_tab_index = (

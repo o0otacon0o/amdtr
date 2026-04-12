@@ -1,5 +1,5 @@
 """
-Exporter — Generiert Standalone-HTML Dateien aus Markdown.
+Exporter — Generates standalone HTML files from Markdown.
 """
 
 from __future__ import annotations
@@ -10,8 +10,8 @@ import json
 
 class HTMLExporter:
     """
-    Exportiert Markdown-Inhalt in eine eigenständige HTML-Datei.
-    Bettet alle notwendigen JS/CSS-Bibliotheken ein.
+    Exports Markdown content to a standalone HTML file.
+    Embeds all necessary JS/CSS libraries.
     """
     
     CDN_FALLBACKS = {
@@ -45,27 +45,27 @@ class HTMLExporter:
             return False
             
     def _prepare_standalone_html(self, template: str, markdown: str, title: str) -> str:
-        """Erzeugt ein vollständig autonomes HTML-Dokument."""
+        """Creates a fully autonomous HTML document."""
         
-        # 1. Titel setzen
+        # 1. Set title
         html = template.replace("<title>amdtr Preview</title>", f"<title>{title}</title>")
         
-        # 2. QWebChannel entfernen
+        # 2. Remove QWebChannel
         html = html.replace('<script src="qrc:///qtwebchannel/qwebchannel.js"></script>', '')
         
-        # 3. Assets einbetten (CSS)
+        # 3. Embed assets (CSS)
         html = self._embed_css(html)
         
-        # 4. Assets einbetten (JS)
+        # 4. Embed assets (JS)
         html = self._embed_js(html)
         
-        # 5. Markdown injizieren (Sicher via JSON)
+        # 5. Inject Markdown (secure via JSON)
         md_json = json.dumps(markdown)
         injection_script = f"""
     <script>
         document.addEventListener('DOMContentLoaded', async () => {{
             try {{
-                // Theme initialisieren (Export ist standardmäßig hell)
+                // Initialize theme (export is light by default)
                 if (window.updateTheme) {{
                     window.updateTheme({{
                         '--syntax': 'light',
@@ -84,7 +84,7 @@ class HTMLExporter:
     </script>
         """
         
-        # WICHTIG: Nur das LETZTE </body> ersetzen, um nicht in eingebettetes JS zu grätschen
+        # IMPORTANT: Replace only the LAST </body> to avoid interfering with embedded JS
         if "</body>" in html:
             parts = html.rpartition("</body>")
             html = parts[0] + injection_script + "</body>" + parts[2]
@@ -94,12 +94,12 @@ class HTMLExporter:
         return html
 
     def _embed_css(self, html: str) -> str:
-        """Ersetzt <link> durch <style> Inhalte (außer KaTeX)."""
+        """Replaces <link> with <style> content (except KaTeX)."""
         def replace_link(match):
             href = match.group(1)
             filename = href.split('/')[-1]
             
-            # KaTeX wegen Fonts besser via CDN
+            # KaTeX is better via CDN because of fonts
             if "katex" in filename:
                 return f'<link rel="stylesheet" href="{self.CDN_FALLBACKS["katex.min.css"]}">'
                 
@@ -114,7 +114,7 @@ class HTMLExporter:
         return re.sub(r'<link.*?href="(vendor/.*?)".*?>', replace_link, html)
 
     def _embed_js(self, html: str) -> str:
-        """Ersetzt <script src> durch <script> Inhalte."""
+        """Replaces <script src> with <script> content."""
         def replace_script(match):
             src = match.group(1)
             filename = src.split('/')[-1]
@@ -122,7 +122,7 @@ class HTMLExporter:
             
             if local_path.exists():
                 content = local_path.read_text(encoding="utf-8")
-                # KRITISCH: </script> innerhalb von JS maskieren
+                # CRITICAL: Mask </script> within JS
                 content = content.replace("</script>", "<\\/script>")
                 return f"<script>/* {filename} */\n{content}\n</script>"
             

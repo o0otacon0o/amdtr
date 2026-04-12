@@ -1,19 +1,19 @@
 """
-Sidebar — Dateibaum + Suche/Filter.
+Sidebar — file tree + search/filter.
 
-Qt-Konzept: Model/View-Architektur
-  Qt trennt Daten (Model) von ihrer Darstellung (View).
-  QFileSystemModel = das Model (liest das Dateisystem)
-  QTreeView         = die View (zeigt Baumstruktur)
-  QSortFilterProxyModel = sitzt zwischen Model und View,
-    filtert/sortiert ohne das Original-Model zu verändern.
+Qt Concept: Model/View Architecture
+  Qt separates data (Model) from its representation (View).
+  QFileSystemModel = the Model (reads the file system)
+  QTreeView         = the View (shows tree structure)
+  QSortFilterProxyModel = sits between Model and View,
+    filters/sorts without modifying the original Model.
 
-  Vorteil: dieselben Daten können von mehreren Views angezeigt
-  werden, und Sortierung/Filterung kostet kein Re-Laden.
+  Advantage: the same data can be displayed by multiple views,
+  and sorting/filtering does not require reloading.
 
-Qt-Konzept: pyqtSignal
-  Eigene Signals werden als Klassen-Attribut mit pyqtSignal()
-  deklariert. Jede Instanz bekommt eine eigene Kopie.
+Qt Concept: pyqtSignal
+  Custom signals are declared as class attributes with pyqtSignal().
+  Each instance gets its own copy.
   Emit: self.file_activated.emit(path)
   Connect: sidebar.file_activated.connect(callable)
 """
@@ -35,42 +35,41 @@ from ui.outline_panel import OutlinePanel
 
 
 class _RecursiveFilterProxy(QSortFilterProxyModel):
-    # ... (rest of proxy code) ...
     """
-    Proxy-Model mit rekursivem Filter:
-    Ein Ordner wird angezeigt, wenn mindestens ein Kind den Filter erfüllt.
+    Proxy model with recursive filter:
+    A folder is displayed if at least one child matches the filter.
 
-    Ohne diese Überschreibung würden Ordner bei aktivem Filter ausgeblendet
-    — der Baum würde kollabieren und man könnte keine Dateien mehr sehen.
+    Without this override, folders would be hidden when a filter is active
+    — the tree would collapse and no files could be seen.
     """
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
-        # Kein aktiver Filter → alles anzeigen
+        # No active filter → show everything
         if not self.filterRegularExpression().pattern():
             return True
 
         model = self.sourceModel()
         index = model.index(source_row, 0, source_parent)
 
-        # Für Verzeichnisse: anzeigen wenn irgendein Kind passt
+        # For directories: show if any child matches
         if model.isDir(index):
             for i in range(model.rowCount(index)):
                 if self.filterAcceptsRow(i, index):
                     return True
             return False
 
-        # Für Dateien: Standard-Filter (Dateiname-Match)
+        # For files: standard filter (filename match)
         return super().filterAcceptsRow(source_row, source_parent)
 
 
 class Sidebar(QWidget):
     """
-    Linkes Panel: Workspace-Header + Suchleiste + Dateibaum/Gliederung.
+    Left panel: workspace header + search bar + file tree/outline.
 
     Signals:
-      file_activated(Path)          — User doppelklickt eine Datei
-      open_workspace_requested(Path) — User klickt "…" und wählt Ordner
-      outline_item_clicked(int)      — User klickt auf Header in Gliederung
+      file_activated(Path)          — User double-clicks a file
+      open_workspace_requested(Path) — User clicks "…" and selects a folder
+      outline_item_clicked(int)      — User clicks a header in the outline
     """
 
     file_activated = pyqtSignal(Path)
@@ -85,11 +84,11 @@ class Sidebar(QWidget):
 
         self._workspace: Workspace | None = None
 
-        # Model: repräsentiert das Dateisystem
+        # Model: represents the file system
         self._fs_model = QFileSystemModel()
         self._fs_model.setReadOnly(False)
 
-        # Proxy: sitzt vor dem Model, übernimmt Filter und Sortierung
+        # Proxy: sits in front of the model, handles filtering and sorting
         self._proxy = _RecursiveFilterProxy()
         self._proxy.setSourceModel(self._fs_model)
         self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -97,7 +96,7 @@ class Sidebar(QWidget):
 
         self._build_ui()
 
-    # ── UI-Aufbau ─────────────────────────────────────────────────────
+    # ── UI Construction ───────────────────────────────────────────────
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -141,7 +140,7 @@ class Sidebar(QWidget):
         self._lbl_workspace.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
         )
-        # elided text: bei zu wenig Platz wird "..." angehängt
+        # elided text: "..." is appended if there's not enough space
         self._lbl_workspace.setTextInteractionFlags(
             Qt.TextInteractionFlag.NoTextInteraction
         )
@@ -166,8 +165,8 @@ class Sidebar(QWidget):
         self._search_input.setPlaceholderText("Filter files…")
         self._search_input.setClearButtonEnabled(True)
 
-        # textChanged: Signal das bei jeder Zeicheneingabe feuert
-        # und den aktuellen Text als String mitgibt
+        # textChanged: Signal that fires on every character input
+        # and provides the current text as a string
         self._search_input.textChanged.connect(self._on_filter_changed)
 
         h.addWidget(self._search_input)
@@ -177,11 +176,11 @@ class Sidebar(QWidget):
         self._tree = QTreeView()
         self._tree.setModel(self._proxy)
 
-        # Kontextmenü aktivieren
+        # Enable context menu
         self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._tree.customContextMenuRequested.connect(self._on_custom_context_menu)
 
-        # Nur die Name-Spalte anzeigen (0), Rest verstecken
+        # Show only the name column (0), hide the rest
         self._tree.setHeaderHidden(True)
         for col in range(1, 4):
             self._tree.hideColumn(col)
@@ -190,10 +189,10 @@ class Sidebar(QWidget):
         self._tree.setUniformRowHeights(True)
         self._tree.setWordWrap(False)
 
-        # Verhindert dass der User Dateien im Tree umbenennen kann
+        # Prevent the user from renaming files directly in the tree
         self._tree.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
 
-        # activated feuert bei Doppelklick ODER Enter-Taste
+        # activated fires on double-click OR Enter key
         self._tree.activated.connect(self._on_item_activated)
 
         return self._tree
@@ -201,7 +200,7 @@ class Sidebar(QWidget):
     # ── Public API ────────────────────────────────────────────────────
 
     def set_workspace(self, ws: Workspace | None) -> None:
-        """Wird von MainWindow aufgerufen wenn ein Workspace geöffnet oder geschlossen wird."""
+        """Called by MainWindow when a workspace is opened or closed."""
         self._workspace = ws
         
         if ws is None:
@@ -218,15 +217,15 @@ class Sidebar(QWidget):
         self._lbl_workspace.setToolTip(str(ws.root))
         self._tree.show()
 
-        # setRootPath startet das Monitoring des Verzeichnisses.
+        # setRootPath starts monitoring the directory.
         self._fs_model.setRootPath(str(ws.root))
         
-        # Nur Notiz-Dateien anzeigen.
+        # Show only note files.
         self._fs_model.setNameFilters(["*.md", "*.mmd", "*.txt"])
         self._fs_model.setNameFilterDisables(False)
 
-        # WICHTIG: Den Root-Index für die View setzen.
-        # Da wir einen Proxy nutzen, müssen wir den Index mappen.
+        # IMPORTANT: Set the root index for the view.
+        # Since we use a proxy, we must map the index.
         source_index = self._fs_model.index(str(ws.root))
         proxy_index = self._proxy.mapFromSource(source_index)
         self._tree.setRootIndex(proxy_index)
@@ -234,25 +233,25 @@ class Sidebar(QWidget):
     # ── Slots ─────────────────────────────────────────────────────────
 
     def _on_item_activated(self, proxy_index: QModelIndex) -> None:
-        # Proxy-Index → Source-Index → Dateipfad
+        # Proxy Index → Source Index → File Path
         source_index = self._proxy.mapToSource(proxy_index)
 
         if self._fs_model.isDir(source_index):
-            return  # Ordner nicht öffnen, nur Dateien
+            return  # Don't open folders, only files
 
         path = Path(self._fs_model.filePath(source_index))
         self.file_activated.emit(path)
 
     def _on_filter_changed(self, text: str) -> None:
-        # setFilterFixedString: sucht nach exaktem Substring (case-insensitiv
-        # weil wir setFilterCaseSensitivity gesetzt haben)
+        # setFilterFixedString: searches for exact substring (case-insensitive
+        # because we set setFilterCaseSensitivity)
         self._proxy.setFilterFixedString(text)
 
         if text:
-            # Bei aktivem Filter: gesamten Baum aufklappen damit Treffer sichtbar
+            # When filter is active: expand entire tree so matches are visible
             self._tree.expandAll()
         else:
-            # Filter gelöscht: Baum wieder zuklappen
+            # Filter cleared: collapse tree again
             self._tree.collapseAll()
 
     def _on_open_btn_clicked(self) -> None:
@@ -265,7 +264,7 @@ class Sidebar(QWidget):
             self.open_workspace_requested.emit(Path(path))
 
     def _on_custom_context_menu(self, pos) -> None:
-        """Erstellt und zeigt das Kontextmenü für Dateien/Ordner."""
+        """Creates and shows the context menu for files/folders."""
         index = self._tree.indexAt(pos)
         if not index.isValid():
             return
@@ -276,11 +275,11 @@ class Sidebar(QWidget):
 
         menu = QMenu(self)
         
-        # Aktionen definieren
+        # Define actions
         rename_act = menu.addAction("Rename")
         delete_act = menu.addAction("Delete")
         
-        # Menü anzeigen und gewählte Aktion abfangen
+        # Show menu and catch selected action
         action = menu.exec(self._tree.mapToGlobal(pos))
         
         if action == rename_act:
@@ -289,7 +288,7 @@ class Sidebar(QWidget):
             self._delete_file(file_path, is_dir)
 
     def _rename_file(self, source_index: QModelIndex, old_path: Path) -> None:
-        """Benennt eine Datei oder einen Ordner um und aktualisiert den Index."""
+        """Renames a file or folder and updates the index."""
         new_name, ok = QInputDialog.getText(
             self, "Rename", "New name:", QLineEdit.EchoMode.Normal, old_path.name
         )
@@ -300,7 +299,7 @@ class Sidebar(QWidget):
                 import os
                 os.rename(old_path, new_path)
                 
-                # Index aktualisieren
+                # Update index
                 if self._workspace:
                     self._workspace.index.remove(old_path)
                     if not self._fs_model.isDir(source_index):
@@ -313,7 +312,7 @@ class Sidebar(QWidget):
                 QMessageBox.critical(self, "Error", f"Could not rename: {e}")
 
     def _delete_file(self, file_path: Path, is_dir: bool) -> None:
-        """Löscht eine Datei oder einen Ordner und entfernt sie aus dem Index."""
+        """Deletes a file or folder and removes it from the index."""
         target_type = "directory" if is_dir else "file"
         reply = QMessageBox.question(
             self, "Confirm Delete",
@@ -328,15 +327,15 @@ class Sidebar(QWidget):
                 import os
                 if is_dir:
                     shutil.rmtree(file_path)
-                    # TODO: Rekursiv alle Dateien im Ordner aus dem Index entfernen
+                    # TODO: Recursively remove all files in folder from index
                 else:
                     os.remove(file_path)
                 
-                # Aus Index entfernen
+                # Remove from index
                 if self._workspace:
                     self._workspace.index.remove(file_path)
                 
-                # Signal emitten, damit Tabs geschlossen werden können
+                # Emit signal so tabs can be closed
                 if not is_dir:
                     self.file_deleted.emit(file_path)
             except Exception as e:

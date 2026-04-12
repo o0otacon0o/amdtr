@@ -1,9 +1,9 @@
 """
-EditorPanel — QScintilla-basierter Markdown-Editor.
+EditorPanel — QScintilla-based Markdown editor.
 
-Ersetzt das bisherige EditorPlaceholder (QTextEdit) durch einen
-vollwertigen Editor mit Syntax-Highlighting, Zeilennummern,
-Code-Folding und erweiterten Features.
+Replaces the previous EditorPlaceholder (QTextEdit) with a
+full-featured editor providing syntax highlighting, line numbers,
+code folding, and advanced features.
 """
 
 from __future__ import annotations
@@ -22,21 +22,21 @@ from themes.schema import EditorTheme
 
 class EditorPanel(QWidget):
     """
-    Editor-Panel mit QScintilla für erweiterte Text-Bearbeitung.
+    Editor panel with QScintilla for advanced text editing.
     
     Features:
-    - Syntax-Highlighting für Markdown + Mermaid
-    - Zeilennummern und Code-Folding
-    - Auto-Completion und Auto-Pairing
-    - Undo/Redo mit QUndoStack Integration
+    - Syntax highlighting for Markdown + Mermaid
+    - Line numbers and code folding
+    - Auto-completion and auto-pairing
+    - Undo/Redo with QUndoStack integration
     """
     
-    # Signals für Parent-Widget (TabWidget)
+    # Signals for parent widget (TabWidget)
     text_changed = pyqtSignal()
     dirty_state_changed = pyqtSignal(bool)
     cursor_position_changed = pyqtSignal(int, int)  # line, column
-    scroll_changed = pyqtSignal(int)               # Erste sichtbare Zeile
-    wikilink_requested = pyqtSignal(Path)  # User möchte Wikilink öffnen
+    scroll_changed = pyqtSignal(int)               # First visible line
+    wikilink_requested = pyqtSignal(Path)  # User wants to open a wikilink
     
     def __init__(self, file_path: Path, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -45,7 +45,7 @@ class EditorPanel(QWidget):
         self._document = DocumentModel(file_path, self)
         self._file_manager = FileManager()
         
-        # Wikilink-Resolver (wird von außen gesetzt)
+        # Wikilink resolver (set from outside)
         self._wikilink_resolver: WikilinkResolver | None = None
         
         self._setup_ui()
@@ -54,7 +54,7 @@ class EditorPanel(QWidget):
         self._wire_signals()
         
     def _setup_ui(self) -> None:
-        """UI-Layout erstellen."""
+        """Create UI layout."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -64,78 +64,78 @@ class EditorPanel(QWidget):
         layout.addWidget(self._editor)
         
     def _setup_editor(self) -> None:
-        """QScintilla konfigurieren."""
-        # Lexer für Syntax-Highlighting
+        """Configure QScintilla."""
+        # Lexer for syntax highlighting
         self._lexer = MdMermaidLexer(self._editor)
         self._editor.setLexer(self._lexer)
         
-        # Basis-Konfiguration
+        # Basic configuration
         self._editor.setUtf8(True)
         self._editor.setIndentationsUseTabs(False)
         self._editor.setIndentationWidth(4)
         self._editor.setAutoIndent(True)
         
-        # Zeilennummern
+        # Line numbers
         self._editor.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
         self._editor.setMarginLineNumbers(0, True)
         self._editor.setMarginSensitivity(0, False)
         
-        # Andere Margins deaktivieren (Symbol-Margin 1 entfernen)
+        # Disable other margins (remove symbol margin 1)
         self._editor.setMarginWidth(1, 0)
         
-        # Code-Folding
+        # Code folding
         self._editor.setFolding(QsciScintilla.FoldStyle.BoxedTreeFoldStyle)
         
-        # Cursor und Selection
+        # Cursor and selection
         self._editor.setCaretLineVisible(True)
         
-        # Brace-Matching
+        # Brace matching
         self._editor.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
         
-        # Schrift setzen
+        # Set font
         font = self._get_editor_font()
         self._editor.setFont(font)
         self._lexer.setFont(font)
         
-        # Whitespace und EOL
+        # Whitespace and EOL
         self._editor.setEolMode(QsciScintilla.EolMode.EolUnix)
         self._editor.setEolVisibility(False)
         self._editor.setWhitespaceVisibility(QsciScintilla.WhitespaceVisibility.WsInvisible)
         
-        # Tab-Verhalten
+        # Tab behavior
         self._editor.setTabWidth(4)
         
-        # Zeilenumbruch (Word Wrap)
+        # Word wrap
         self._editor.setWrapMode(QsciScintilla.WrapMode.WrapWord)
         self._editor.setWrapVisualFlags(QsciScintilla.WrapVisualFlag.WrapFlagByText)
         
-        # Mouse-Events für Wikilink-Navigation
+        # Mouse events for wikilink navigation
         self._editor.mousePressEvent = self._on_mouse_press
         
     def set_theme(self, theme: EditorTheme) -> None:
-        """Wendet ein Editor-Theme an."""
-        # Farben für Editor-Widget
+        """Applies an editor theme."""
+        # Colors for editor widget
         bg_color = QColor(theme.background)
         fg_color = QColor(theme.foreground)
         
         self._editor.setPaper(bg_color)
         self._editor.setColor(fg_color)
         
-        # WICHTIG: Default-Style des Lexers auch direkt setzen für den Hintergrund
+        # IMPORTANT: Set default style of the lexer directly for the background
         if self._lexer:
-            # setDefaultPaper/Color existieren in QsciLexer
+            # setDefaultPaper/Color exist in QsciLexer
             self._lexer.setDefaultPaper(bg_color)
             self._lexer.setDefaultColor(fg_color)
             self._lexer.set_theme(theme)
         
-        # Zeilennummern
+        # Line numbers
         self._editor.setMarginsBackgroundColor(QColor(theme.line_number_bg))
         self._editor.setMarginsForegroundColor(QColor(theme.line_number_fg))
         
-        # Folding-Balken visuell entfernen (Hintergrund an Editor anpassen)
+        # Visually remove folding bars (match background to editor)
         self._editor.setFoldMarginColors(bg_color, bg_color)
         
-        # Caret und Selection
+        # Caret and selection
         self._editor.setCaretForegroundColor(fg_color)
         self._editor.setCaretLineBackgroundColor(QColor(theme.current_line))
         self._editor.setSelectionBackgroundColor(QColor(theme.selection_bg))
@@ -146,7 +146,7 @@ class EditorPanel(QWidget):
         self._editor.update()
         
     def _get_editor_font(self) -> QFont:
-        """Bestimmt die beste verfügbare Monospace-Schrift."""
+        """Determines the best available monospace font."""
         preferred_fonts = [
             "Cascadia Code", "Cascadia Mono", "JetBrains Mono",
             "Fira Code", "Source Code Pro", "Consolas", "Monaco", 
@@ -162,7 +162,7 @@ class EditorPanel(QWidget):
                 font.setFixedPitch(True)
                 return font
         
-        # Fallback: System-Monospace
+        # Fallback: system monospace
         font = QFont()
         font.setFixedPitch(True)
         font.setPointSize(11)
@@ -170,75 +170,75 @@ class EditorPanel(QWidget):
         return font
         
     def _wire_signals(self) -> None:
-        """Signals mit Slots verbinden."""
-        # Text-Änderungen
+        """Connect signals to slots."""
+        # Text changes
         self._editor.textChanged.connect(self._on_text_changed)
         self._editor.textChanged.connect(self._update_line_number_width)
         
-        # Cursor-Position
+        # Cursor position
         self._editor.cursorPositionChanged.connect(self._on_cursor_changed)
         
-        # Document Model Signals
+        # Document model signals
         self._document.dirty_state_changed.connect(self.dirty_state_changed.emit)
         
-        # Scroll-Sync (Editor -> Preview)
+        # Scroll sync (editor -> preview)
         self._editor.verticalScrollBar().valueChanged.connect(
             lambda: self.scroll_changed.emit(self._editor.firstVisibleLine())
         )
 
     def set_first_visible_line(self, line: int) -> None:
-        """Scrollt den Editor so, dass die angegebene Zeile oben sichtbar ist."""
+        """Scrolls the editor so that the specified line is visible at the top."""
         self._editor.setFirstVisibleLine(line)
 
     def _update_line_number_width(self) -> None:
-        """Passt die Breite des Zeilennummern-Margins an die Anzahl der Zeilen an."""
+        """Adjusts the width of the line number margin to the number of lines."""
         lines = self._editor.lines()
         width = len(str(lines))
-        # Nutze '9' statt '0' für die Breitenberechnung (oft breitestes Zeichen)
+        # Use '9' instead of '0' for width calculation (often the widest character)
         format_str = "9" * max(2, width) + " "
         self._editor.setMarginWidth(0, format_str)
         
     def _load_file(self) -> None:
-        """Datei-Inhalt laden."""
+        """Load file content."""
         success = self._document.load_from_disk()
         if success:
-            # Text in Editor setzen (ohne Signals zu triggern)
+            # Set text in editor (without triggering signals)
             self._editor.blockSignals(True)
             self._editor.setText(self._document.text)
             self._editor.blockSignals(False)
             
-            # Cursor-Position wiederherstellen
+            # Restore cursor position
             line, col = self._document.get_cursor_position()
             self._editor.setCursorPosition(line, col)
         else:
-            # Neue/unlesbare Datei
+            # New or unreadable file
             self._editor.setText("")
     
     # ── Public Interface ──────────────────────────────────────────────
     
     def path(self) -> Path:
-        """Dateipfad des geöffneten Dokuments."""
+        """File path of the open document."""
         return self._document.path
         
     def is_dirty(self) -> bool:
-        """True wenn ungespeicherte Änderungen existieren."""
+        """True if there are unsaved changes."""
         return self._document.dirty
         
     def save(self) -> bool:
         """
-        Speichert das Dokument.
-        Gibt True zurück wenn erfolgreich.
+        Saves the document.
+        Returns True if successful.
         """
-        # Aktuellen Text ins Document Model übertragen
+        # Transfer current text to document model
         current_text = self._editor.text()
         if self._document.text != current_text:
             self._document.text = current_text
             
-        # Cursor-Position speichern
+        # Save cursor position
         line, col = self._editor.getCursorPosition()
         self._document.set_cursor_position(line, col)
         
-        # Auf Disk speichern
+        # Save to disk
         success = self._document.save_to_disk()
         
         if not success:
@@ -250,107 +250,107 @@ class EditorPanel(QWidget):
         return success
         
     def get_selected_text(self) -> str:
-        """Gibt den aktuell selektierten Text zurück."""
+        """Returns the currently selected text."""
         return self._editor.selectedText()
         
     def insert_text(self, text: str) -> None:
-        """Fügt Text an der Cursor-Position ein."""
+        """Inserts text at the cursor position."""
         self._editor.insert(text)
         
     def get_cursor_position(self) -> tuple[int, int]:
-        """Gibt aktuelle Cursor-Position zurück (line, column)."""
+        """Returns current cursor position (line, column)."""
         return self._editor.getCursorPosition()
         
     def set_cursor_position(self, line: int, column: int) -> None:
-        """Setzt Cursor-Position."""
+        """Sets cursor position."""
         self._editor.setCursorPosition(line, column)
         
     def get_line_count(self) -> int:
-        """Gibt Anzahl der Zeilen zurück."""
+        """Returns the number of lines."""
         return self._editor.lines()
         
     def get_text(self) -> str:
-        """Gibt kompletten Editor-Text zurück."""
+        """Returns the full editor text."""
         return self._editor.text()
         
     def set_text(self, text: str) -> None:
-        """Setzt kompletten Editor-Text."""
+        """Sets the full editor text."""
         self._editor.setText(text)
     
     def set_wikilink_resolver(self, resolver: WikilinkResolver | None) -> None:
-        """Setzt den Wikilink-Resolver für Link-Navigation."""
+        """Sets the wikilink resolver for link navigation."""
         self._wikilink_resolver = resolver
         self._document.set_wikilink_resolver(resolver)
     
     def get_document_model(self) -> DocumentModel:
-        """Gibt das DocumentModel zurück (für Integration mit anderen Komponenten)."""
+        """Returns the document model (for integration with other components)."""
         return self._document
         
     def find_text(self, text: str, forward: bool = True) -> bool:
         """
-        Sucht nach Text im Editor.
-        Gibt True zurück wenn ein Treffer gefunden wurde.
+        Searches for text in the editor.
+        Returns True if a match was found.
         """
         if not text:
-            # Selektion aufheben wenn Suche leer
+            # Clear selection if search is empty
             line, col = self._editor.getCursorPosition()
             self._editor.setSelection(line, col, line, col)
             return False
 
-        # Suche konfigurieren
-        re = False      # Regular Expression
-        cs = False      # Case Sensitive
-        wo = False      # Whole Word
+        # Configure search
+        re = False      # Regular expression
+        cs = False      # Case sensitive
+        wo = False      # Whole word
         wrap = True     # Wrap around
         
         if forward:
-            # findNext() setzt dort fort wo findFirst() aufgehört hat
+            # findNext() continues where findFirst() left off
             return self._editor.findFirst(text, re, cs, wo, wrap, forward)
         else:
-            # Rückwärtssuche
+            # Backward search
             return self._editor.findFirst(text, re, cs, wo, wrap, forward)
 
     # ── Slots ─────────────────────────────────────────────────────────
     
     def _on_text_changed(self) -> None:
-        """Text wurde geändert."""
-        # Document Model aktualisieren
+        """Text has changed."""
+        # Update document model
         current_text = self._editor.text()
         if self._document.text != current_text:
             self._document.text = current_text
         
-        # Signal weiterleiten
+        # Forward signal
         self.text_changed.emit()
         
     def _on_cursor_changed(self, line: int, index: int) -> None:
-        """Cursor-Position geändert."""
-        # Position im Document Model speichern
+        """Cursor position has changed."""
+        # Save position in document model
         self._document.set_cursor_position(line, index)
 
-        # Signal weiterleiten
+        # Forward signal
         self.cursor_position_changed.emit(line, index)
 
     def _on_mouse_press(self, event) -> None:
         """
-        Mouse-Press-Event-Handler für Ctrl+Click Wikilink-Navigation.
+        Mouse press event handler for Ctrl+Click wikilink navigation.
 
-        Überschreibt QScintilla's mousePressEvent um Wikilink-Clicks abzufangen.
+        Overrides QScintilla's mousePressEvent to intercept wikilink clicks.
         """
-        # Ctrl+Click für Wikilink-Navigation
+        # Ctrl+Click for wikilink navigation
         if (event.modifiers() == Qt.KeyboardModifier.ControlModifier and
             event.button() == Qt.MouseButton.LeftButton):
 
-            # Position unter Maus bestimmen
+            # Determine position under mouse
             pos = event.position().toPoint()
             char_pos = self._editor.positionFromPoint(pos.x(), pos.y())
 
             if char_pos >= 0:
-                # Prüfe ob an dieser Position ein Wikilink ist
+                # Check if there is a wikilink at this position
                 resolved_path = self._document.resolve_wikilink_at_position(char_pos)
                 if resolved_path:
-                    # Wikilink gefunden - Navigation anfordern
+                    # Wikilink found - request navigation
                     self.wikilink_requested.emit(resolved_path)
-                    return  # Event nicht weiterleiten
+                    return  # Don't forward event
 
-        # Standard-Verhalten für alle anderen Clicks
+        # Standard behavior for all other clicks
         QsciScintilla.mousePressEvent(self._editor, event)

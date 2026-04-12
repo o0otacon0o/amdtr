@@ -1,5 +1,5 @@
 """
-SearchIndex — SQLite FTS5-basierte Volltextsuche für den Workspace.
+SearchIndex — SQLite FTS5-based full-text search for the workspace.
 """
 
 from __future__ import annotations
@@ -11,8 +11,8 @@ from typing import List, Tuple
 
 class SearchIndex:
     """
-    Verwaltet einen SQLite FTS5 Suchindex für Markdown-Dateien.
-    Speichert Pfade, Titel und den Volltext.
+    Manages an SQLite FTS5 search index for Markdown files.
+    Stores paths, titles, and the full text.
     """
 
     def __init__(self, db_path: Path) -> None:
@@ -21,9 +21,9 @@ class SearchIndex:
         self._setup_table()
 
     def _setup_table(self) -> None:
-        """Erstellt die FTS5-Tabelle falls nicht vorhanden."""
+        """Creates the FTS5 table if it does not exist."""
         cursor = self._conn.cursor()
-        # fts5 Tabelle für blitzschnelle Suche
+        # fts5 table for lightning-fast search
         cursor.execute("""
             CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
                 path UNINDEXED, 
@@ -35,14 +35,14 @@ class SearchIndex:
         self._conn.commit()
 
     def add_or_update(self, path: Path, content: str) -> None:
-        """Fügt eine Datei zum Index hinzu oder aktualisiert sie."""
+        """Adds a file to the index or updates it."""
         rel_path = str(path)
         title = path.stem
         
         cursor = self._conn.cursor()
-        # Erst alten Eintrag löschen (falls vorhanden)
+        # First delete old entry (if present)
         cursor.execute("DELETE FROM notes_fts WHERE path = ?", (rel_path,))
-        # Neu einfügen
+        # Insert new entry
         cursor.execute(
             "INSERT INTO notes_fts(path, title, content) VALUES (?, ?, ?)",
             (rel_path, title, content)
@@ -50,21 +50,21 @@ class SearchIndex:
         self._conn.commit()
 
     def remove(self, path: Path) -> None:
-        """Entfernt eine Datei aus dem Index."""
+        """Removes a file from the index."""
         cursor = self._conn.cursor()
         cursor.execute("DELETE FROM notes_fts WHERE path = ?", (str(path),))
         self._conn.commit()
 
     def search(self, query: str) -> List[Tuple[str, str, str]]:
         """
-        Führt eine Volltextsuche aus.
-        Unterstützt automatische Präfix-Suche (Wildcards).
+        Executes a full-text search.
+        Supports automatic prefix search (wildcards).
         """
         if not query:
             return []
 
-        # Query für FTS5 aufbereiten: Wörter mit * für Präfix-Suche versehen
-        # Aus "mein haus" wird "mein* haus*"
+        # Prepare query for FTS5: append * to words for prefix search
+        # "my house" becomes "my* house*"
         words = query.split()
         if not words:
             return []
@@ -88,7 +88,7 @@ class SearchIndex:
             return []
 
     def clear(self) -> None:
-        """Löscht den gesamten Index."""
+        """Clears the entire index."""
         cursor = self._conn.cursor()
         cursor.execute("DELETE FROM notes_fts")
         self._conn.commit()

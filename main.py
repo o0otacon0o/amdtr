@@ -21,7 +21,7 @@ def main() -> None:
     app.setApplicationName("amdtr")
     app.setOrganizationName("amdtr")
     
-    # Icon setzen
+    # Set icon
     icon_path = Path(__file__).parent / "amdtr-icon.png"
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))

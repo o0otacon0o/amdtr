@@ -1,11 +1,11 @@
 """
-ConfigManager — Verwaltung der Anwendungseinstellungen.
+ConfigManager — Management of application settings.
 
-Kapselt:
-- QSettings für systemweite Einstellungen
-- Workspace-spezifische Konfiguration
-- Theme-Einstellungen
-- Editor-Präferenzen
+Encapsulates:
+- QSettings for system-wide settings
+- Workspace-specific configuration
+- Theme settings
+- Editor preferences
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from PyQt6.QtCore import QSettings
 
 @dataclass
 class EditorConfig:
-    """Editor-spezifische Einstellungen."""
+    """Editor-specific settings."""
     font_family: str = "Cascadia Code"
     font_size: int = 11
     tab_width: int = 4
@@ -30,7 +30,7 @@ class EditorConfig:
 
 @dataclass
 class UIConfig:
-    """UI-spezifische Einstellungen."""
+    """UI-specific settings."""
     theme_name: str = "github-light"
     sidebar_width: int = 260
     preview_enabled: bool = True
@@ -41,7 +41,7 @@ class UIConfig:
 
 @dataclass
 class AppConfig:
-    """Globale Anwendungseinstellungen."""
+    """Global application settings."""
     last_workspace: str = ""
     recent_files: list[str] = None
     recent_workspaces: list[str] = None
@@ -61,10 +61,10 @@ class AppConfig:
 
 class ConfigManager:
     """
-    Zentrale Konfigurationsverwaltung.
+    Central configuration management.
     
-    Verwaltet sowohl globale App-Einstellungen (QSettings)
-    als auch workspace-spezifische Konfigurationen.
+    Manages both global app settings (QSettings)
+    and workspace-specific configurations.
     """
     
     def __init__(self) -> None:
@@ -73,12 +73,12 @@ class ConfigManager:
         
     @property
     def config(self) -> AppConfig:
-        """Aktuelle Konfiguration."""
+        """Current configuration."""
         return self._config
     
     def save_config(self) -> None:
-        """Speichert aktuelle Konfiguration persistent."""
-        # Editor-Einstellungen
+        """Saves current configuration persistently."""
+        # Editor settings
         editor = self._config.editor
         self._settings.beginGroup("editor")
         self._settings.setValue("font_family", editor.font_family)
@@ -91,7 +91,7 @@ class ConfigManager:
         self._settings.setValue("auto_save_delay", editor.auto_save_delay)
         self._settings.endGroup()
         
-        # UI-Einstellungen
+        # UI settings
         ui = self._config.ui
         self._settings.beginGroup("ui")
         self._settings.setValue("theme_name", ui.theme_name)
@@ -102,7 +102,7 @@ class ConfigManager:
         self._settings.setValue("splitter_state", ui.splitter_state)
         self._settings.endGroup()
         
-        # Globale Einstellungen
+        # Global settings
         self._settings.setValue("last_workspace", self._config.last_workspace)
         self._settings.setValue("recent_files", self._config.recent_files)
         self._settings.setValue("recent_workspaces", self._config.recent_workspaces)
@@ -110,45 +110,45 @@ class ConfigManager:
         self._settings.sync()
     
     def add_recent_file(self, path: Path) -> None:
-        """Fügt eine Datei zur Recent-Liste hinzu."""
+        """Adds a file to the recent files list."""
         path_str = str(path)
         
-        # Vorhandenen Eintrag entfernen
+        # Remove existing entry
         if path_str in self._config.recent_files:
             self._config.recent_files.remove(path_str)
             
-        # An den Anfang hinzufügen
+        # Add to the beginning
         self._config.recent_files.insert(0, path_str)
         
-        # Auf max. 10 Einträge begrenzen
+        # Limit to max 10 entries
         self._config.recent_files = self._config.recent_files[:10]
     
     def add_recent_workspace(self, path: Path) -> None:
-        """Fügt einen Workspace zur Recent-Liste hinzu."""
+        """Adds a workspace to the recent workspaces list."""
         path_str = str(path)
         
-        # Vorhandenen Eintrag entfernen
+        # Remove existing entry
         if path_str in self._config.recent_workspaces:
             self._config.recent_workspaces.remove(path_str)
             
-        # An den Anfang hinzufügen
+        # Add to the beginning
         self._config.recent_workspaces.insert(0, path_str)
         
-        # Auf max. 5 Einträge begrenzen
+        # Limit to max 5 entries
         self._config.recent_workspaces = self._config.recent_workspaces[:5]
     
     def get_workspace_config_path(self, workspace_root: Path) -> Path:
         """
-        Pfad zur workspace-spezifischen Konfigurationsdatei.
-        Liegt in .amdtr/config.toml
+        Path to the workspace-specific configuration file.
+        Located in .amdtr/config.toml
         """
         return workspace_root / ".amdtr" / "config.toml"
     
     def _load_config(self) -> AppConfig:
-        """Lädt Konfiguration aus QSettings."""
+        """Loads configuration from QSettings."""
         config = AppConfig()
         
-        # Editor-Einstellungen laden
+        # Load editor settings
         self._settings.beginGroup("editor")
         config.editor.font_family = self._settings.value("font_family", config.editor.font_family)
         config.editor.font_size = int(self._settings.value("font_size", config.editor.font_size))
@@ -160,7 +160,7 @@ class ConfigManager:
         config.editor.auto_save_delay = int(self._settings.value("auto_save_delay", config.editor.auto_save_delay))
         self._settings.endGroup()
         
-        # UI-Einstellungen laden
+        # Load UI settings
         self._settings.beginGroup("ui")
         config.ui.theme_name = self._settings.value("theme_name", config.ui.theme_name)
         config.ui.sidebar_width = int(self._settings.value("sidebar_width", config.ui.sidebar_width))
@@ -170,7 +170,7 @@ class ConfigManager:
         config.ui.splitter_state = self._settings.value("splitter_state", config.ui.splitter_state)
         self._settings.endGroup()
         
-        # Globale Einstellungen laden
+        # Load global settings
         config.last_workspace = self._settings.value("last_workspace", "")
         config.recent_files = self._settings.value("recent_files", [], type=list)
         config.recent_workspaces = self._settings.value("recent_workspaces", [], type=list)

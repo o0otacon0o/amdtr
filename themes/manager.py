@@ -1,7 +1,7 @@
 """
-ThemeManager — Verwaltung und Laden von Themes.
+ThemeManager — Management and loading of themes.
 
-Ermöglicht das Laden von JSON-Themes und das Umschalten zur Laufzeit.
+Enables loading of JSON themes and switching at runtime.
 """
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ from themes.schema import Theme
 
 class ThemeManager(QObject):
     """
-    Zentrale Verwaltung für Anwendung-Themes.
+    Central management for application themes.
     
     Signals:
-    - theme_changed: Wird emittiert, wenn ein neues Theme aktiviert wird.
+    - theme_changed: Emitted when a new theme is activated.
     """
     theme_changed = pyqtSignal(Theme)
     
@@ -27,12 +27,12 @@ class ThemeManager(QObject):
         self._themes: Dict[str, Theme] = {}
         self._active_theme: Optional[Theme] = None
         
-        # PyInstaller-Bundle Support: Ressourcenpfad bestimmen
+        # PyInstaller-Bundle Support: Determine resource path
         if getattr(sys, 'frozen', False):
-            # Wenn als EXE ausgeführt, liegen Themes unter _MEIPASS/themes
+            # If executed as EXE, themes are located in _MEIPASS/themes
             self._themes_dir = Path(sys._MEIPASS) / "themes"
         else:
-            # Im Entwicklungsmodus relativ zum Skript
+            # In development mode, relative to the script
             self._themes_dir = Path(__file__).parent
             
         self._settings = QSettings("amdtr", "app")
@@ -41,7 +41,7 @@ class ThemeManager(QObject):
         self._load_saved_theme()
         
     def discover_themes(self) -> None:
-        """Sucht nach .json Dateien im themes-Verzeichnis."""
+        """Searches for .json files in the themes directory."""
         for json_file in self._themes_dir.glob("*.json"):
             try:
                 with open(json_file, "r", encoding="utf-8") as f:
@@ -52,7 +52,7 @@ class ThemeManager(QObject):
                 print(f"Error loading theme {json_file}: {e}")
                 
     def _load_saved_theme(self) -> None:
-        """Lädt das in den QSettings gespeicherte Theme."""
+        """Loads the theme saved in QSettings."""
         saved_name = self._settings.value("active_theme", "One Dark")
         if not self.set_active_theme(saved_name):
             # Fallback
@@ -62,15 +62,15 @@ class ThemeManager(QObject):
                 self.set_active_theme(list(self._themes.keys())[0])
 
     def get_theme_names(self) -> List[str]:
-        """Gibt Namen aller verfügbaren Themes zurück."""
+        """Returns names of all available themes."""
         return list(self._themes.keys())
         
     def get_theme(self, name: str) -> Optional[Theme]:
-        """Gibt ein Theme nach Name zurück."""
+        """Returns a theme by name."""
         return self._themes.get(name)
         
     def set_active_theme(self, name: str) -> bool:
-        """Aktiviert ein Theme nach Name."""
+        """Activates a theme by name."""
         theme = self.get_theme(name)
         if theme:
             self._active_theme = theme
@@ -80,15 +80,15 @@ class ThemeManager(QObject):
         return False
         
     def active_theme(self) -> Theme:
-        """Gibt das aktuell aktive Theme zurück (Fallback auf erstes verfügbares)."""
+        """Returns the currently active theme (fallback to first available)."""
         if self._active_theme:
             return self._active_theme
             
         if self._themes:
-            # Fallback: One Dark bevorzugen, sonst das erste
+            # Fallback: prefer One Dark, otherwise the first one
             if "One Dark" in self._themes:
                 return self._themes["One Dark"]
             return list(self._themes.values())[0]
             
-        # Hardcoded Fallback (sollte nie passieren wenn One Dark existiert)
+        # Hardcoded fallback (should never happen if One Dark exists)
         raise RuntimeError("No themes found and no fallback available.")

@@ -1,16 +1,16 @@
 """
-TabWidget — verwaltet geöffnete Dateien als Tabs.
+TabWidget — manages opened files as tabs.
 
-Qt-Konzept: QTabWidget
-  Container der genau ein Kind-Widget gleichzeitig zeigt, mit
-  einer Tab-Leiste zum Wechseln. Key-Properties:
-    setTabsClosable(True)  → × Button pro Tab
-    setMovable(True)       → Tabs per Drag umordnen
-    setDocumentMode(True)  → Saubereres Look, kein Rahmen um Tab-Inhalt
+Qt Concept: QTabWidget
+  Container that shows exactly one child widget at a time, with
+  a tab bar for switching. Key properties:
+    setTabsClosable(True)  → × button per tab
+    setMovable(True)       → reorder tabs via drag and drop
+    setDocumentMode(True)  → cleaner look, no border around tab content
 
-  Wichtige Signals:
-    tabCloseRequested(int index) → × wurde geklickt
-    currentChanged(int index)   → aktiver Tab hat gewechselt
+  Important signals:
+    tabCloseRequested(int index) → × was clicked
+    currentChanged(int index)   → active tab has changed
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from themes.schema import Theme
 # ── Welcoming screen ──────────────────────────────────────────────────
 
 class WelcomeWidget(QWidget):
-    """Wird angezeigt solange keine Datei geöffnet ist."""
+    """Displayed as long as no file is open."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -61,10 +61,10 @@ class WelcomeWidget(QWidget):
 
 class TabWidget(QTabWidget):
     """
-    Verwaltet geöffnete Dateien. Pro Datei ein Tab.
+    Manages open files. One tab per file.
 
-    Verhindert doppeltes Öffnen: wenn eine Datei schon offen ist,
-    wird nur zum bestehenden Tab gewechselt.
+    Prevents duplicate opening: if a file is already open,
+    it just switches to the existing tab.
     """
 
     active_file_changed = pyqtSignal(object)  # Path | None
@@ -77,20 +77,20 @@ class TabWidget(QTabWidget):
         self.setDocumentMode(True)
         self.setElideMode(Qt.TextElideMode.ElideMiddle)
 
-        # Mapping: aufgelöster Pfad → Tab-Index für schnelle Lookups
+        # Mapping: resolved path → tab index for fast lookups
         self._open_paths: dict[Path, int] = {}
         
-        # Wikilink-System
+        # Wikilink system
         self._workspace: Workspace | None = None
         self._wikilink_resolver: WikilinkResolver | None = None
         
-        # Theme-System
+        # Theme system
         self._current_theme: Theme | None = None
 
-        # Welcome-Screen als initialer Inhalt
+        # Welcome screen as initial content
         self._welcome = WelcomeWidget()
         idx = self.addTab(self._welcome, "Welcome")
-        # Den × Button am Welcome-Tab entfernen
+        # Remove the × button on the welcome tab
         self.tabBar().setTabButton(idx, QTabBar.ButtonPosition.RightSide, None)
 
         self.tabCloseRequested.connect(self._on_close_requested)
@@ -99,7 +99,7 @@ class TabWidget(QTabWidget):
     # ── Public API ────────────────────────────────────────────────────
 
     def set_theme(self, theme: Theme) -> None:
-        """Propagiert das Theme an alle Tabs."""
+        """Propagates the theme to all tabs."""
         self._current_theme = theme
         for i in range(self.count()):
             widget = self.widget(i)
@@ -107,36 +107,36 @@ class TabWidget(QTabWidget):
                 widget.set_theme(theme)
 
     def open_file(self, path: Path) -> None:
-        """Datei öffnen oder zu ihr wechseln falls schon offen."""
+        """Opens a file or switches to it if already open."""
         path = path.resolve()
 
-        # Schon offen → nur zu diesem Tab wechseln
+        # Already open → just switch to this tab
         if path in self._open_paths:
             self.setCurrentIndex(self._open_paths[path])
             return
 
         editor = EditorPreviewSplit(path)
 
-        # Wikilink-Resolver mit Editor verbinden
+        # Connect wikilink resolver with editor
         if self._wikilink_resolver:
             editor.set_wikilink_resolver(self._wikilink_resolver)
             
-        # Theme anwenden falls schon gesetzt
+        # Apply theme if already set
         if self._current_theme:
             editor.set_theme(self._current_theme)
 
-        # Signals verbinden
+        # Connect signals
         editor.dirty_state_changed.connect(
             lambda dirty, p=path: self._on_editor_dirty_changed(p, dirty)
         )
         
-        # Wikilink-Navigation-Signal verbinden
+        # Connect wikilink navigation signal
         editor.wikilink_requested.connect(self.open_file)
 
         idx = self.addTab(editor, path.name)
         self.setTabToolTip(idx, str(path))
 
-        # Welcome-Tab entfernen wenn erste echte Datei geöffnet wird
+        # Remove welcome tab when the first real file is opened
         welcome_idx = self.indexOf(self._welcome)
         if welcome_idx != -1:
             self.removeTab(welcome_idx)
@@ -166,15 +166,15 @@ class TabWidget(QTabWidget):
     
     def set_workspace(self, workspace: Workspace | None) -> None:
         """
-        Setzt den aktiven Workspace und initialisiert Wikilink-System.
+        Sets the active workspace and initializes the wikilink system.
         """
         self._workspace = workspace
         
         if workspace:
-            # Wikilink-Resolver für neuen Workspace erstellen
+            # Create wikilink resolver for new workspace
             self._wikilink_resolver = WikilinkResolver(workspace)
             
-            # Alle bereits geöffneten Editoren mit Resolver verbinden
+            # Connect all already open editors with the resolver
             for i in range(self.count()):
                 widget = self.widget(i)
                 if isinstance(widget, EditorPreviewSplit):
@@ -182,7 +182,7 @@ class TabWidget(QTabWidget):
         else:
             self._wikilink_resolver = None
             
-            # Resolver von allen Editoren entfernen
+            # Remove resolver from all editors
             for i in range(self.count()):
                 widget = self.widget(i)
                 if isinstance(widget, EditorPreviewSplit):
@@ -213,7 +213,7 @@ class TabWidget(QTabWidget):
         self.removeTab(index)
         self._rebuild_path_index()
 
-        # Welcome-Screen zurückbringen wenn alle Tabs geschlossen
+        # Bring back welcome screen if all tabs are closed
         if self.count() == 0:
             idx = self.addTab(self._welcome, "Welcome")
             self.tabBar().setTabButton(idx, QTabBar.ButtonPosition.RightSide, None)
@@ -228,7 +228,7 @@ class TabWidget(QTabWidget):
             self.active_file_changed.emit(None)
 
     def _on_editor_dirty_changed(self, path: Path, dirty: bool) -> None:
-        # Tab-Label mit "●" markieren wenn ungespeichert
+        # Mark tab label with "●" if unsaved
         if path in self._open_paths:
             idx = self._open_paths[path]
             w = self.widget(idx)
@@ -247,9 +247,9 @@ class TabWidget(QTabWidget):
 
     def _rebuild_path_index(self) -> None:
         """
-        Baut das Path→Index-Mapping neu auf.
-        Muss nach jedem addTab/removeTab aufgerufen werden, weil
-        QTabWidget Indizes nach Entfernen eines Tabs verschiebt.
+        Rebuilds the Path→Index mapping.
+        Must be called after every addTab/removeTab because QTabWidget
+        shifts indices after removing a tab.
         """
         self._open_paths = {}
         for i in range(self.count()):

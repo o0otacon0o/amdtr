@@ -1,7 +1,7 @@
 """
-Theme Schema — Datenstrukturen für JSON-Theme-Definitionen.
+Theme Schema — Data structures for JSON theme definitions.
 
-Definiert die Struktur und Validation für Theme-Files.
+Defines the structure and validation for theme files.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 
 @dataclass
 class TokenStyle:
-    """Style-Definition für einen Token-Typ."""
+    """Style definition for a token type."""
     color: str
     background: Optional[str] = None
     bold: bool = False
@@ -19,7 +19,7 @@ class TokenStyle:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> TokenStyle:
-        """Erstellt TokenStyle aus Dictionary."""
+        """Creates TokenStyle from dictionary."""
         return cls(
             color=data.get("color", "#000000"),
             background=data.get("background"),
@@ -30,7 +30,7 @@ class TokenStyle:
 
 @dataclass
 class EditorTheme:
-    """Editor-spezifische Theme-Definition."""
+    """Editor-specific theme definition."""
     background: str
     foreground: str
     selection_bg: str
@@ -42,7 +42,7 @@ class EditorTheme:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> EditorTheme:
-        """Erstellt EditorTheme aus Dictionary."""
+        """Creates EditorTheme from dictionary."""
         tokens = {}
         for token_name, token_data in data.get("tokens", {}).items():
             tokens[token_name] = TokenStyle.from_dict(token_data)
@@ -61,7 +61,7 @@ class EditorTheme:
 
 @dataclass 
 class UITheme:
-    """UI-spezifische Theme-Definition."""
+    """UI-specific theme definition."""
     sidebar_bg: str
     sidebar_fg: str
     tab_active_bg: str
@@ -74,7 +74,7 @@ class UITheme:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> UITheme:
-        """Erstellt UITheme aus Dictionary.""" 
+        """Creates UITheme from dictionary.""" 
         return cls(
             sidebar_bg=data.get("sidebar_bg", "#f6f8fa"),
             sidebar_fg=data.get("sidebar_fg", "#24292f"),
@@ -90,7 +90,7 @@ class UITheme:
 
 @dataclass
 class PreviewTheme:
-    """Preview-spezifische Theme-Definition."""
+    """Preview-specific theme definition."""
     background: str
     foreground: str
     link: str
@@ -102,7 +102,7 @@ class PreviewTheme:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> PreviewTheme:
-        """Erstellt PreviewTheme aus Dictionary."""
+        """Creates PreviewTheme from dictionary."""
         return cls(
             background=data.get("background", "#ffffff"),
             foreground=data.get("foreground", "#000000"),
@@ -115,7 +115,7 @@ class PreviewTheme:
         )
     
     def to_dict(self) -> Dict[str, str]:
-        """Gibt alle Properties als Dictionary für die CSS-Injektion zurück."""
+        """Returns all properties as a dictionary for CSS injection."""
         return {
             "--bg": self.background,
             "--text": self.foreground,
@@ -128,7 +128,7 @@ class PreviewTheme:
         }
     
     def to_css(self) -> str:
-        """Konvertiert zu CSS Custom Properties."""
+        """Converts to CSS custom properties."""
         lines = [":root {"]
         for prop, value in self.to_dict().items():
             lines.append(f"  {prop}: {value};")
@@ -138,7 +138,7 @@ class PreviewTheme:
 
 @dataclass
 class Theme:
-    """Vollständige Theme-Definition."""
+    """Full theme definition."""
     name: str
     dark: bool
     editor: EditorTheme
@@ -147,7 +147,7 @@ class Theme:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Theme:
-        """Erstellt Theme aus JSON-Dictionary."""
+        """Creates Theme from JSON dictionary."""
         return cls(
             name=data.get("name", "Unnamed"),
             dark=data.get("dark", False),

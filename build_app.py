@@ -6,15 +6,15 @@ import sys
 from pathlib import Path
 
 def ensure_vendor_assets():
-    """Stellt sicher, dass die JS/CSS Ressourcen vorhanden sind."""
+    """Ensures that JS/CSS resources are present."""
     vendor_dir = Path(__file__).parent / "resources" / "vendor"
-    # Prüfe auf eine der kritischen Dateien
+    # Check for one of the critical files
     required_file = vendor_dir / "marked.min.js"
     
     if not required_file.exists():
         print("[*] Vendor assets missing. Running setup_vendor.py...")
         try:
-            # Führe setup_vendor.py aus
+            # Execute setup_vendor.py
             subprocess.run([sys.executable, "setup_vendor.py"], check=True)
             print("[+] Vendor assets downloaded successfully.")
         except Exception as e:
@@ -24,30 +24,30 @@ def ensure_vendor_assets():
         print("[+] Vendor assets already present.")
 
 def build():
-    # Sicherstellen, dass Ressourcen da sind
+    # Ensure that resources are present
     ensure_vendor_assets()
     
-    # OS-Spezifische Einstellungen
+    # OS-specific settings
     is_windows = platform.system() == "Windows"
     separator = ";" if is_windows else ":"
     
-    # Ressourcen-Pfade (Source:Destination)
+    # Resource paths (Source:Destination)
     datas = [
         (f"resources{os.sep}*", "resources"),
         (f"themes{os.sep}*.json", "themes"),
     ]
     
-    # Argumente für PyInstaller
+    # Arguments for PyInstaller
     args = [
         'main.py',                    # Entry point
         '--name=amdtr',               # App-Name
         '--icon=amdtr-ico.png',       # Icon-File
-        '--onefile',                  # Einzelne EXE
-        '--windowed',                 # Keine Console
-        '--clean',                    # Cache leeren
+        '--onefile',                  # Single EXE
+        '--windowed',                 # No console
+        '--clean',                    # Clear cache
     ]
     
-    # Daten-Pfade hinzufügen
+    # Add data paths
     for src, dst in datas:
         args.append(f'--add-data={src}{separator}{dst}')
     

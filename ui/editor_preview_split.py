@@ -1,5 +1,5 @@
 """
-Editor-Preview-Split — kombiniert Editor und Live-Preview in einem QSplitter
+Editor-Preview-Split — combines editor and live preview in a QSplitter.
 """
 from PyQt6.QtWidgets import (
     QSplitter, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -15,7 +15,7 @@ from themes.schema import Theme
 
 
 class SearchPanel(QFrame):
-    """Kompakte Suchleiste für Editor und Preview."""
+    """Compact search bar for editor and preview."""
     search_requested = pyqtSignal(str, bool)  # text, forward
     close_requested = pyqtSignal()
 
@@ -25,6 +25,7 @@ class SearchPanel(QFrame):
         self._setup_ui()
 
     def _setup_ui(self):
+        """Initializes the search panel UI."""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.setSpacing(8)
@@ -55,28 +56,29 @@ class SearchPanel(QFrame):
         layout.addWidget(self.btn_close)
 
     def focus_search(self):
+        """Focuses the search input field and selects all text."""
         self.search_input.setFocus()
         self.search_input.selectAll()
 
 
 class EditorPreviewSplit(QWidget):
     """
-    Kombiniert EditorPanel und PreviewPanel mit 150ms Live-Sync.
+    Combines EditorPanel and PreviewPanel with 150ms live-sync.
     
     Layout: [Editor | Preview] (horizontal split)
     
     Features:
-    - Editor-Änderungen → Preview Update (150ms debounced)
-    - Bidirektionale Scroll-Synchronisation
-    - Integrierte Suche (Ctrl+F)
-    - Preview kann ein-/ausgeblendet werden
-    - Erhält alle EditorPanel Signals weiter
+    - Editor changes → Preview update (150ms debounced)
+    - Bidirectional scroll synchronization
+    - Integrated search (Ctrl+F)
+    - Preview can be toggled on/off
+    - Forwards all EditorPanel signals
     """
     
-    # Signals von EditorPanel weiterleiten
+    # Forward signals from EditorPanel
     dirty_state_changed = pyqtSignal(bool)
-    content_changed = pyqtSignal(str)  # Neues Signal für Preview-Updates
-    wikilink_requested = pyqtSignal(Path)  # Wikilink-Navigation angefordert
+    content_changed = pyqtSignal(str)  # New signal for preview updates
+    wikilink_requested = pyqtSignal(Path)  # Wikilink navigation requested
     
     def __init__(self, file_path: Path, parent=None):
         super().__init__(parent)
@@ -90,11 +92,11 @@ class EditorPreviewSplit(QWidget):
         self._setup_actions()
         
     def set_theme(self, theme: Theme) -> None:
-        """Propagiert das Theme an Editor und Preview."""
+        """Propagates the theme to editor and preview."""
         self._editor.set_theme(theme.editor)
         self._preview.set_theme(theme.preview)
         
-        # Suchleiste-Farben anpassen
+        # Adjust search bar colors
         self._search_panel.setStyleSheet(f"""
             #SearchPanel {{
                 background-color: {theme.ui.sidebar_bg};
@@ -117,7 +119,7 @@ class EditorPreviewSplit(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Horizontaler Splitter
+        # Horizontal splitter
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
         
         # Editor-Panel (QScintilla)
@@ -126,62 +128,62 @@ class EditorPreviewSplit(QWidget):
         # Preview-Panel (QWebEngineView)
         self._preview = PreviewPanel()
         
-        # Zu Splitter hinzufügen
+        # Add to splitter
         self._splitter.addWidget(self._editor)
         self._splitter.addWidget(self._preview)
         
-        # Standard-Proportionen: 60% Editor, 40% Preview
+        # Default proportions: 60% editor, 40% preview
         self._splitter.setSizes([600, 400])
-        self._splitter.setStretchFactor(0, 1)  # Editor strecken
-        self._splitter.setStretchFactor(1, 1)  # Preview strecken
+        self._splitter.setStretchFactor(0, 1)  # Stretch editor
+        self._splitter.setStretchFactor(1, 1)  # Stretch preview
         
-        main_layout.addWidget(self._splitter, 1) # 1 = Nimmt allen überschüssigen Platz ein
+        main_layout.addWidget(self._splitter, 1) # 1 = Takes all excess space
 
-        # Suchleiste
+        # Search bar
         self._search_panel = SearchPanel(self)
         self._search_panel.hide()
-        main_layout.addWidget(self._search_panel, 0) # 0 = Nur so viel Platz wie nötig
+        main_layout.addWidget(self._search_panel, 0) # 0 = Only as much space as needed
 
     def _setup_actions(self):
-        """Tastenkürzel für Suche."""
+        """Keyboard shortcuts for search."""
         self.act_find = QAction("Find", self)
         self.act_find.setShortcut(QKeySequence.StandardKey.Find)
         self.act_find.triggered.connect(self._on_toggle_search)
         self.addAction(self.act_find)
 
     def _setup_connections(self) -> None:
-        """Signal-Verbindungen für Live-Sync und Suche"""
-        # Editor → Preview: Text-Änderungen
+        """Signal connections for live-sync and search."""
+        # Editor → Preview: text changes
         self._editor.text_changed.connect(self._on_editor_changed)
         
-        # Editor → Preview: Scroll-Sync (beim Scrollen im Editor)
+        # Editor → Preview: scroll-sync (when scrolling in editor)
         self._editor.scroll_changed.connect(self._on_editor_scroll)
         
-        # Editor → Preview: Cursor-Position für Scroll-Sync (beim Tippen/Navigieren)
+        # Editor → Preview: cursor position for scroll-sync (when typing/navigating)
         self._editor.cursor_position_changed.connect(self._on_cursor_moved)
         
-        # Preview → Editor: Scroll-Sync rückwärts
+        # Preview → Editor: backwards scroll-sync
         self._preview.scroll_to_line.connect(self._on_preview_scroll)
         
-        # EditorPanel Signals weiterleiten
+        # Forward EditorPanel signals
         self._editor.dirty_state_changed.connect(self.dirty_state_changed.emit)
         self._editor.wikilink_requested.connect(self.wikilink_requested.emit)
 
-        # Suche
+        # Search
         self._search_panel.search_requested.connect(self._on_search_requested)
         self._search_panel.close_requested.connect(self._search_panel.hide)
         
         print(f"[DEBUG] EditorPreviewSplit: Setup connections completed")
         
-        # Initial preview mit aktuellem Editor-Inhalt laden
+        # Load initial preview with current editor content
         self._update_preview()
 
     def _on_toggle_search(self):
-        """Blendet die Suchleiste ein/aus."""
+        """Toggles the search bar visibility."""
         if self._search_panel.isVisible():
             if self._search_panel.search_input.hasFocus():
                 self._search_panel.hide()
-                # Preview-Highlights löschen (leere Suche triggern)
+                # Clear preview highlights (trigger empty search)
                 self._preview.find_text("")
                 self._editor.setFocus()
             else:
@@ -191,72 +193,72 @@ class EditorPreviewSplit(QWidget):
             self._search_panel.focus_search()
 
     def _on_search_requested(self, text: str, forward: bool):
-        """Führt die Suche in Editor und Preview aus."""
-        # 1. Editor-Suche
+        """Executes search in both editor and preview."""
+        # 1. Editor search
         self._editor.find_text(text, forward)
         
-        # 2. Preview-Suche
+        # 2. Preview search
         self._preview.find_text(text, forward)
 
     def _on_editor_changed(self) -> None:
-        """Editor-Text hat sich geändert → Preview aktualisieren"""
+        """Editor text has changed → update preview."""
         print(f"[DEBUG] EditorPreviewSplit._on_editor_changed called")
         self._update_preview()
         self.content_changed.emit(self._editor.get_text())
         
     def _on_editor_scroll(self, first_line: int) -> None:
-        """Editor wurde gescrollt → Preview mitziehen"""
+        """Editor was scrolled → sync preview."""
         if self._preview_visible and self._scroll_sync_enabled:
-            # 1-basiert für Preview. Wir nutzen die erste sichtbare Zeile.
+            # 1-based for preview. We use the first visible line.
             self._preview.scroll_to_line_number(first_line + 1)
 
     def _on_cursor_moved(self, line: int, index: int) -> None:
-        """Cursor im Editor bewegt → Preview scrollen"""
-        # Nur wenn der Cursor wirklich bewegt wurde, soll die Vorschau folgen.
+        """Cursor moved in editor → scroll preview."""
+        # Only if the cursor was actually moved should the preview follow.
         if self._preview_visible and self._scroll_sync_enabled:
             self._preview.scroll_to_line_number(line + 1)
             
     def _on_preview_scroll(self, line: int) -> None:
-        """Preview gescrollt → Editor nur scrollen (nicht Cursor bewegen)"""
+        """Preview scrolled → scroll editor only (do not move cursor)."""
         if line > 0 and self._scroll_sync_enabled:
-            # WICHTIG: Nutze set_first_visible_line statt set_cursor_position,
-            # damit der Editor nicht "springt" und den Cursor verliert.
+            # IMPORTANT: Use set_first_visible_line instead of set_cursor_position,
+            # so the editor doesn't "jump" and lose the cursor.
             self._editor.set_first_visible_line(line - 1)
             
     def _update_preview(self) -> None:
-        """Aktuellen Editor-Inhalt an Preview senden"""
+        """Send current editor content to preview."""
         if self._preview_visible:
             markdown_text = self._editor.get_text()
             line, _ = self._editor.get_cursor_position()
             self._preview.update_markdown(markdown_text, line + 1)
     
-    # ── Public API (EditorPanel-kompatibel) ──────────────────────────
+    # ── Public API (EditorPanel-compatible) ──────────────────────────
     
     def path(self) -> Path:
-        """Dateipfad des geöffneten Dokuments"""
+        """File path of the open document."""
         return self._editor.path()
         
     def is_dirty(self) -> bool:
-        """Sind ungespeicherte Änderungen vorhanden?"""
+        """Are there unsaved changes?"""
         return self._editor.is_dirty()
         
     def save(self) -> None:
-        """Datei speichern"""
+        """Save file."""
         self._editor.save()
         
     def toPlainText(self) -> str:
-        """Aktueller Editor-Inhalt als String"""
+        """Current editor content as string."""
         return self._editor.get_text()
         
     def setText(self, text: str) -> None:
-        """Editor-Inhalt setzen"""
+        """Set editor content."""
         self._editor.set_text(text)
         
     # ── Visibility Control ──────────────────────────────────────────────
     
     def set_view_mode(self, mode: str) -> None:
         """
-        Setzt den Ansichtsmodus: 'editor', 'split', oder 'preview'.
+        Sets the view mode: 'editor', 'split', or 'preview'.
         """
         if mode == 'editor':
             self._editor_visible = True
@@ -275,7 +277,7 @@ class EditorPreviewSplit(QWidget):
             self._update_preview()
 
     def get_view_mode(self) -> str:
-        """Gibt den aktuellen Ansichtsmodus zurück."""
+        """Returns the current view mode."""
         if self._editor_visible and self._preview_visible:
             return 'split'
         if self._editor_visible:
@@ -283,39 +285,39 @@ class EditorPreviewSplit(QWidget):
         return 'preview'
 
     def toggle_preview(self) -> None:
-        """Klassischer Toggle (wird von MainWindow genutzt)."""
+        """Classic toggle (used by MainWindow)."""
         if self._preview_visible and not self._editor_visible:
-            return # Verhindere dass alles unsichtbar wird
+            return # Prevent everything from becoming invisible
         self.set_view_mode('split' if not self._preview_visible else 'editor')
             
     def is_preview_visible(self) -> bool:
-        """Ist Preview aktuell sichtbar?"""
+        """Is the preview currently visible?"""
         return self._preview_visible
 
     def is_editor_visible(self) -> bool:
-        """Ist Editor aktuell sichtbar?"""
+        """Is the editor currently visible?"""
         return self._editor_visible
 
     def set_scroll_sync_enabled(self, enabled: bool) -> None:
-        """Aktiviert/Deaktiviert Scroll-Sync."""
+        """Enables/disables scroll-sync."""
         self._scroll_sync_enabled = enabled
 
     def is_scroll_sync_enabled(self) -> bool:
-        """Gibt zurück ob Scroll-Sync aktiv ist."""
+        """Returns whether scroll-sync is active."""
         return self._scroll_sync_enabled
     
-    # ── Wikilink-System ───────────────────────────────────────────────
+    # ── Wikilink System ───────────────────────────────────────────────
     
     def set_wikilink_resolver(self, resolver: WikilinkResolver | None) -> None:
-        """Setzt den Wikilink-Resolver für Link-Navigation."""
+        """Sets the wikilink resolver for link navigation."""
         self._editor.set_wikilink_resolver(resolver)
     
-    # ── Editor-Zugriff für erweiterte Features ─────────────────────────
+    # ── Editor Access for advanced features ───────────────────────────
     
     def editor(self) -> EditorPanel:
-        """Direkter Zugriff auf EditorPanel für erweiterte Features"""
+        """Direct access to EditorPanel for advanced features."""
         return self._editor
         
     def preview(self) -> PreviewPanel:
-        """Direkter Zugriff auf PreviewPanel für erweiterte Features"""  
+        """Direct access to PreviewPanel for advanced features."""  
         return self._preview

@@ -1,27 +1,27 @@
 """
-MainWindow — das Hauptfenster der Anwendung.
+MainWindow — the main window of the application.
 
-Qt-Konzept: QMainWindow
-  QMainWindow ist ein spezialisiertes QWidget mit eingebauten Slots für:
-    - Menu Bar (oben)
-    - Toolbars (oben/unten/seitlich, optional)
-    - Dock Widgets (andockbare Seitenpanels, optional)
-    - Central Widget (füllt den verbleibenden Platz)
-    - Status Bar (unten)
+Qt Concept: QMainWindow
+  QMainWindow is a specialized QWidget with built-in slots for:
+    - Menu Bar (top)
+    - Toolbars (top/bottom/side, optional)
+    - Dock Widgets (dockable side panels, optional)
+    - Central Widget (fills the remaining space)
+    - Status Bar (bottom)
 
-  Wir nutzen: Menu Bar + Central Widget + Status Bar.
+  We use: Menu Bar + Central Widget + Status Bar.
 
-Qt-Konzept: QSplitter
-  Erlaubt dem User, die Breite von Sidebar und Editor durch Ziehen
-  der Trennlinie anzupassen. setSizes() setzt die Anfangsbreiten in Pixel.
-  setStretchFactor() bestimmt, welches Widget beim Vergrößern des Fensters
-  wächst (0 = nicht strecken, 1 = strecken).
+Qt Concept: QSplitter
+  Allows the user to adjust the width of sidebar and editor by dragging
+  the divider. setSizes() sets the initial widths in pixels.
+  setStretchFactor() determines which widget grows when resizing the window
+  (0 = do not stretch, 1 = stretch).
 
-Qt-Konzept: QSettings
-  Persistente Einstellungen zwischen Programmstarts.
-  Auf Windows: HKEY_CURRENT_USER\\Software\\amdtr\\app (Registry)
-  Auf macOS/Linux: ~/.config/amdtr/app.conf
-  Nutze setValue() zum Speichern, value() zum Lesen.
+Qt Concept: QSettings
+  Persistent settings between program starts.
+  On Windows: HKEY_CURRENT_USER\\Software\\amdtr\\app (Registry)
+  On macOS/Linux: ~/.config/amdtr/app.conf
+  Use setValue() to save, value() to read.
 """
 
 from __future__ import annotations
@@ -66,14 +66,14 @@ class MainWindow(QMainWindow):
         self._build_search_palette()
         self._wire_signals()
         
-        # Initial Theme setzen
+        # Set initial theme
         self._apply_theme(self._theme_manager.active_theme())
         
         self._restore_session()
 
     def _apply_theme(self, theme: Theme) -> None:
-        """Wendet das Theme auf das Hauptfenster und alle Sub-Komponenten an."""
-        # 1. Globale QSS generieren
+        """Applies the theme to the main window and all sub-components."""
+        # 1. Generate global QSS
         qss = f"""
             QMainWindow, QWidget {{
                 background-color: {theme.ui.sidebar_bg};
@@ -218,10 +218,10 @@ class MainWindow(QMainWindow):
         """
         self.setStyleSheet(qss)
         
-        # 2. Sidebar informieren
+        # 2. Inform Sidebar
         self._sidebar.setStyleSheet(f"background-color: {theme.ui.sidebar_bg}; color: {theme.ui.sidebar_fg}; border-right: 1px solid {theme.ui.border};")
         
-        # 3. Tabs informieren
+        # 3. Inform Tabs
         self._tabs.set_theme(theme)
 
     # ── UI construction ───────────────────────────────────────────────
@@ -236,14 +236,14 @@ class MainWindow(QMainWindow):
         self._splitter.addWidget(self._sidebar)
         self._splitter.addWidget(self._tabs)
 
-        # Index 0 = Sidebar: nicht strecken beim Fenster-Resize
-        # Index 1 = Editor:  strecken (nimmt verfügbaren Platz)
+        # Index 0 = Sidebar: do not stretch on window resize
+        # Index 1 = Editor: stretch (takes available space)
         self._splitter.setStretchFactor(0, 0)
         self._splitter.setStretchFactor(1, 1)
         self._splitter.setSizes([260, 1020])
 
-        # Das Central Widget füllt den gesamten Bereich zwischen
-        # Menu Bar und Status Bar.
+        # The Central Widget fills the entire area between
+        # Menu Bar and Status Bar.
         self.setCentralWidget(self._splitter)
 
     def _build_menu(self) -> None:
@@ -334,13 +334,13 @@ class MainWindow(QMainWindow):
         # ── Theme ─────────────────────────────────────────────────────
         theme_menu = mb.addMenu("&Theme")
         
-        # Dynamisch alle verfügbaren Themes laden
+        # Dynamically load all available themes
         for theme_name in self._theme_manager.get_theme_names():
             act_theme = QAction(theme_name, self)
             act_theme.triggered.connect(lambda checked, name=theme_name: self._theme_manager.set_active_theme(name))
             theme_menu.addAction(act_theme)
 
-        # --- Rechte Seite: Schnellzugriff-Buttons ---
+        # --- Right side: Quick access buttons ---
         self._header_buttons = QWidget()
         h_layout = QHBoxLayout(self._header_buttons)
         h_layout.setContentsMargins(0, 0, 10, 0)
@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
         self._btn_new.setToolTip("New File (Ctrl+N)")
         self._btn_new.clicked.connect(self._on_new_file)
 
-        # 3. View Modes (Segmented Control Stil)
+        # 3. View Modes (Segmented Control style)
         self._btn_view_editor = QToolButton()
         self._btn_view_editor.setText("📝")
         self._btn_view_editor.setCheckable(True)
@@ -425,8 +425,8 @@ class MainWindow(QMainWindow):
         mb.setCornerWidget(self._header_buttons, Qt.Corner.TopRightCorner)
 
     def _build_status_bar(self) -> None:
-        # addWidget(w, stretch=0): links ausgerichtet, fester Platz
-        # addPermanentWidget(w):   rechts ausgerichtet, verdrängt nie andere
+        # addWidget(w, stretch=0): left-aligned, fixed space
+        # addPermanentWidget(w):   right-aligned, never displaced
         self._lbl_workspace = QLabel("No workspace open")
         self._lbl_cursor = QLabel("")
 
@@ -435,65 +435,65 @@ class MainWindow(QMainWindow):
         sb.addPermanentWidget(self._lbl_cursor)
 
     def _build_command_palette(self) -> None:
-        """Erstellt und konfiguriert die Command Palette."""
+        """Creates and configures the Command Palette."""
         self._command_palette = CommandPalette(self)
 
     def _build_search_palette(self) -> None:
-        """Erstellt das Overlay für die Volltextsuche."""
+        """Creates the overlay for full-text search."""
         self._search_palette = SearchPalette(self)
 
     # ── Signal wiring ─────────────────────────────────────────────────
     #
-    # Qt-Konzept: Signals & Slots
-    #   signal.connect(slot) verbindet ein Signal mit einem Callable.
-    #   Wenn das Signal emittet wird, ruft Qt alle verbundenen Slots auf.
-    #   Ein Signal kann mit beliebig vielen Slots verbunden sein.
-    #   Slots können beliebige Python-Callables sein (Methoden, Lambdas, …).
+    # Qt Concept: Signals & Slots
+    #   signal.connect(slot) connects a signal to a callable.
+    #   When the signal is emitted, Qt calls all connected slots.
+    #   A signal can be connected to any number of slots.
+    #   Slots can be any Python callables (methods, lambdas, …).
 
     def _wire_signals(self) -> None:
-        # Sidebar teilt mit wenn der User auf eine Datei doppelklickt
+        # Sidebar informs when the user double-clicks a file
         self._sidebar.file_activated.connect(self._tabs.open_file)
         self._sidebar.file_deleted.connect(self._on_file_deleted)
         
         # Outline Integration
         self._sidebar.outline_item_clicked.connect(self._on_outline_item_clicked)
 
-        # Sidebar-Button "…" möchte Workspace wechseln
+        # Sidebar button "…" requested workspace change
         self._sidebar.open_workspace_requested.connect(self._load_workspace)
 
-        # Tab-Widget teilt mit welche Datei gerade aktiv ist
+        # Tab widget informs which file is currently active
         self._tabs.active_file_changed.connect(self._on_active_file_changed)
-        self._tabs.currentChanged.connect(self._update_outline) # Bei Tab-Wechsel
+        self._tabs.currentChanged.connect(self._update_outline) # On tab change
 
-        # Tab-Widget teilt mit wenn sich der Dirty-State ändert
+        # Tab widget informs when dirty state changes
         self._tabs.dirty_state_changed.connect(self._on_dirty_state_changed)
 
-        # Command Palette Signals
+        # Command Palette signals
         self._command_palette.file_requested.connect(self._tabs.open_file)
         self._command_palette.action_requested.connect(self._on_command_palette_action)
         
-        # Global Search Signals
+        # Global Search signals
         self._search_palette.file_requested.connect(self._tabs.open_file)
         
-        # Theme Signals
+        # Theme signals
         self._theme_manager.theme_changed.connect(self._apply_theme)
 
     def _on_outline_item_clicked(self, line: int) -> None:
-        """Scrollt den aktiven Editor zur angegebenen Zeile."""
+        """Scrolls the active editor to the specified line."""
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit):
             w.editor().set_cursor_position(line, 0)
             w.editor().setFocus()
 
     def _update_outline(self) -> None:
-        """Aktualisiert die Gliederung basierend auf dem aktuellen Dokument."""
+        """Updates the outline based on the current document."""
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit):
             self._sidebar._outline.update_outline(w.toPlainText())
         else:
             self._sidebar._outline.update_outline("")
 
-    # ── Slots: Menu-Aktionen ──────────────────────────────────────────
+    # ── Slots: Menu Actions ───────────────────────────────────────────
 
     def _on_open_workspace(self) -> None:
         path = QFileDialog.getExistingDirectory(
@@ -505,13 +505,13 @@ class MainWindow(QMainWindow):
             self._load_workspace(Path(path))
 
     def _on_close_workspace(self) -> None:
-        """Schließt den aktuellen Workspace und setzt die UI zurück."""
+        """Closes the current workspace and resets the UI."""
         if not self._workspace:
             return
 
-        # Optional: Alle Tabs schließen?
+        # Optional: Close all tabs?
         # self._tabs.clear() 
-        # (Meistens behält man die Tabs offen, aber sie sind nicht mehr Teil des WS)
+        # (Usually tabs stay open, but are no longer part of the workspace)
 
         self._workspace = None
         self._sidebar.set_workspace(None)
@@ -537,14 +537,14 @@ class MainWindow(QMainWindow):
 
     def _on_save(self) -> None:
         self._tabs.save_current()
-        # Index aktualisieren
+        # Update index
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit) and self._workspace:
             self._workspace.index.add_or_update(w.path(), w.toPlainText())
 
     def _on_save_all(self) -> None:
         self._tabs.save_all()
-        # Alle offenen Dateien im Index aktualisieren
+        # Update all open files in index
         if self._workspace:
             for i in range(self._tabs.count()):
                 w = self._tabs.widget(i)
@@ -552,20 +552,20 @@ class MainWindow(QMainWindow):
                     self._workspace.index.add_or_update(w.path(), w.toPlainText())
 
     def _on_file_deleted(self, path: Path) -> None:
-        """Wird aufgerufen wenn eine Datei in der Sidebar gelöscht wurde."""
-        # Prüfen ob die Datei in einem Tab offen ist
+        """Called when a file has been deleted in the sidebar."""
+        # Check if file is open in a tab
         if path in self._tabs._open_paths:
             idx = self._tabs._open_paths[path]
-            # Tab ohne Speichern-Frage schließen (Datei ist ja schon weg)
+            # Close tab without asking to save (file is already gone)
             self._tabs.removeTab(idx)
             self._tabs._rebuild_path_index()
 
     def _on_new_file(self) -> None:
-        """Fragt nach einem Speicherort und erstellt eine neue Markdown-Datei."""
-        # Standard-Pfad: Workspace oder Home
+        """Asks for a save location and creates a new Markdown file."""
+        # Default path: Workspace or Home
         initial_dir = self._workspace.root if self._workspace else Path.home()
         
-        # Dialog zum Speichern öffnen
+        # Open save dialog
         file_path_str, _ = QFileDialog.getSaveFileName(
             self, "Create New Markdown File",
             str(initial_dir / "Untitled.md"),
@@ -573,19 +573,19 @@ class MainWindow(QMainWindow):
         )
         
         if not file_path_str:
-            return # User hat abgebrochen
+            return # User cancelled
 
         file_path = Path(file_path_str)
             
         try:
-            # Leere Datei erstellen (falls sie noch nicht existiert)
+            # Create empty file (if it doesn't exist yet)
             if not file_path.exists():
                 file_path.write_text("", encoding="utf-8")
             
-            # Datei öffnen
+            # Open file
             self._tabs.open_file(file_path)
             
-            # Fokus auf den Editor setzen
+            # Set focus to editor
             w = self._tabs.currentWidget()
             if isinstance(w, EditorPreviewSplit):
                 w.setFocus()
@@ -599,28 +599,28 @@ class MainWindow(QMainWindow):
             self._btn_sidebar.setChecked(is_visible)
 
     def _on_find_in_document(self) -> None:
-        """Triggert die Suche im aktuellen Editor (Ctrl+F)."""
+        """Triggers find in the current editor (Ctrl+F)."""
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit):
             w.act_find.trigger()
 
     def _on_command_palette(self) -> None:
-        """Öffnet Command Palette für Dateien und Aktionen (Ctrl+P)."""
+        """Opens Command Palette for files and actions (Ctrl+P)."""
         self._command_palette.show_files_and_actions()
 
     def _on_global_search(self) -> None:
-        """Öffnet die globale Volltextsuche (Ctrl+Shift+F)."""
+        """Opens global full-text search (Ctrl+Shift+F)."""
         if self._workspace:
             self._search_palette.open_search()
         else:
             QMessageBox.information(self, "Global Search", "Please open a workspace first.")
 
     def _on_command_palette_actions(self) -> None:
-        """Öffnet Command Palette nur für Aktionen (Ctrl+Shift+P)."""
+        """Opens Command Palette for actions only (Ctrl+Shift+P)."""
         self._command_palette.show_actions_only()
 
     def _on_command_palette_action(self, action_name: str) -> None:
-        """Führt eine Aktion aus der Command Palette aus."""
+        """Executes an action from the Command Palette."""
         if action_name == "open_workspace":
             self._on_open_workspace()
         elif action_name == "open_file":
@@ -631,7 +631,7 @@ class MainWindow(QMainWindow):
             self._on_toggle_sidebar()
 
     def _on_export_html(self) -> None:
-        """Exportiert die aktuelle Datei als HTML."""
+        """Exports the current file as HTML."""
         w = self._tabs.currentWidget()
         if not isinstance(w, EditorPreviewSplit):
             QMessageBox.information(self, "Export", "No active document to export.")
@@ -654,21 +654,21 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Export Error", "Failed to export HTML.")
 
     def _on_toggle_preview(self) -> None:
-        """Klassischer Toggle (wird von QAction genutzt)."""
+        """Classic toggle (used by QAction)."""
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit):
             w.toggle_preview()
             self._update_view_mode_buttons(w.get_view_mode())
 
     def _on_set_view_mode(self, mode: str) -> None:
-        """Setzt den Ansichtsmodus im aktuellen Tab."""
+        """Sets the view mode in the current tab."""
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit):
             w.set_view_mode(mode)
             self._update_view_mode_buttons(mode)
 
     def _update_view_mode_buttons(self, mode: str) -> None:
-        """Aktualisiert den checked-Status der 3 View-Mode Buttons."""
+        """Updates the checked state of the 3 view mode buttons."""
         if not hasattr(self, '_btn_view_editor'):
             return
             
@@ -677,7 +677,7 @@ class MainWindow(QMainWindow):
         self._btn_view_preview.setChecked(mode == 'preview')
 
     def _on_toggle_scroll_sync(self) -> None:
-        """Schaltet den Scroll-Sync im aktuellen Tab um."""
+        """Toggles scroll sync in the current tab."""
         w = self._tabs.currentWidget()
         if isinstance(w, EditorPreviewSplit):
             is_enabled = not w.is_scroll_sync_enabled()
@@ -685,25 +685,25 @@ class MainWindow(QMainWindow):
             if hasattr(self, '_btn_sync'):
                 self._btn_sync.setChecked(is_enabled)
 
-    # ── Slots: von anderen Widgets ────────────────────────────────────
+    # ── Slots: from other widgets ─────────────────────────────────────
 
     def _on_active_file_changed(self, path: Path | None) -> None:
-        # Button-Status an den aktuellen Tab anpassen
+        # Update button status to match current tab
         w = self._tabs.currentWidget()
         is_split = isinstance(w, EditorPreviewSplit)
         
         if is_split:
-            # Signal für Gliederungs-Update verknüpfen
+            # Connect signal for outline update
             try:
                 w.content_changed.disconnect(self._update_outline)
             except TypeError:
                 pass
             w.content_changed.connect(self._update_outline)
             
-            # Initiales Update
+            # Initial update
             self._update_outline()
             
-            # View Mode Buttons aktualisieren
+            # Update view mode buttons
             self._update_view_mode_buttons(w.get_view_mode())
 
         if hasattr(self, '_btn_sync'):
@@ -737,7 +737,7 @@ class MainWindow(QMainWindow):
             )
 
     def _on_dirty_state_changed(self) -> None:
-        # Fenster-Titel zeigt "●" wenn es ungespeicherte Änderungen gibt
+        # Window title shows "●" when there are unsaved changes
         base = "amdtr"
         if self._workspace:
             base = f"amdtr — {self._workspace.name}"
@@ -746,7 +746,7 @@ class MainWindow(QMainWindow):
         else:
             self.setWindowTitle(base)
 
-    # ── Workspace laden ───────────────────────────────────────────────
+    # ── Workspace loading ─────────────────────────────────────────────
 
     def _load_workspace(self, path: Path) -> None:
         try:
@@ -768,11 +768,11 @@ class MainWindow(QMainWindow):
         self._lbl_workspace.setText(str(ws.root))
         self._settings.setValue("last_workspace", str(ws.root))
         
-        # Hintergrund-Indexierung starten
+        # Start background indexing
         self._index_workspace_background()
 
     def _index_workspace_background(self) -> None:
-        """Indiziert den gesamten Workspace im Hintergrund via QThread."""
+        """Indexes the entire workspace in the background via QThread."""
         if not self._workspace:
             return
             
@@ -799,7 +799,7 @@ class MainWindow(QMainWindow):
         self._index_thread.finished.connect(lambda: print("[+] Indexing complete."))
         self._index_thread.start()
 
-    # ── Session Persistenz ────────────────────────────────────────────
+    # ── Session Persistence ───────────────────────────────────────────
 
     def _restore_session(self) -> None:
         geometry = self._settings.value("geometry")
@@ -823,9 +823,9 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         """
-        closeEvent wird aufgerufen kurz bevor das Fenster geschlossen wird.
-        Wir fragen nach ungespeicherten Änderungen und speichern den Zustand.
-        Wichtig: event.ignore() bricht das Schließen ab, event.accept() erlaubt es.
+        closeEvent is called just before the window is closed.
+        We ask about unsaved changes and save the state.
+        Important: event.ignore() cancels closing, event.accept() allows it.
         """
         if self._tabs.has_unsaved_changes():
             reply = QMessageBox.question(
