@@ -29,14 +29,11 @@ class HTMLExporter:
         self._vendor_dir = self._resources_dir / "vendor"
         self._template_path = template_path or (self._resources_dir / "preview.html")
         
-    def export(self, markdown: str, output_path: Path, title: str = "Exported Note", base_path: Path | None = None) -> bool:
+    def export(self, markdown: str, output_path: Path, title: str = "Exported Note") -> bool:
         try:
             if not self._template_path.exists():
                 return False
                 
-            # 0. Embed images in Markdown
-            markdown = self._embed_images(markdown, base_path)
-            
             template = self._template_path.read_text(encoding="utf-8")
             html = self._prepare_standalone_html(template, markdown, title)
             
@@ -46,72 +43,6 @@ class HTMLExporter:
         except Exception as e:
             print(f"[ERROR] Export failed: {e}")
             return False
-
-    def _embed_images(self, markdown: str, base_path: Path | None) -> str:
-        """
-        Finds all image references in Markdown and converts local images to Base64.
-        """
-        import base64
-        import mimetypes
-
-        def replace_img(match):
-            alt_text = match.group(1)
-            img_path_str = match.group(2)
-            
-            # Skip URLs, data URIs, or absolute paths (unless they exist)
-            if img_path_str.startswith(("http://", "https://", "data:")):
-                return match.group(0)
-            
-            # Try to resolve path
-            img_path = Path(img_path_str)
-            if not img_path.is_absolute() and base_path:
-                img_path = base_path / img_path
-                
-            if img_path.exists() and img_path.is_file():
-                try:
-                    mime_type, _ = mimetypes.guess_type(img_path)
-                    if not mime_type:
-                        mime_type = "image/png" # Fallback
-                        
-                    with open(img_path, "rb") as f:
-                        encoded_string = base64.b64encode(f.read()).decode("utf-8")
-                        return f"![{alt_text}](data:{mime_type};base64,{encoded_string})"
-                except Exception as e:
-                    print(f"[WARNING] Could not embed image {img_path}: {e}")
-            
-            return match.group(0)
-
-        # Regex for Markdown images: ![alt](path)
-        markdown = re.sub(r'!\[(.*?)\]\((.*?)\)', replace_img, markdown)
-
-        # Regex for Wikilink images: ![[path]] or ![[path|alt]]
-        def replace_wikilink_img(match):
-            parts = match.group(1).split('|')
-            img_path_str = parts[0].strip()
-            alt_text = parts[1].strip() if len(parts) > 1 else ""
-            
-            # Try to resolve path (simplified, as we don't have the full WikilinkResolver here)
-            img_path = Path(img_path_str)
-            if not img_path.is_absolute() and base_path:
-                # Check directly in base_path first
-                test_path = base_path / img_path
-                if test_path.exists():
-                    img_path = test_path
-            
-            if img_path.exists() and img_path.is_file():
-                try:
-                    mime_type, _ = mimetypes.guess_type(img_path)
-                    if not mime_type: mime_type = "image/png"
-                    with open(img_path, "rb") as f:
-                        encoded_string = base64.b64encode(f.read()).decode("utf-8")
-                        # Convert to standard Markdown image with Base64
-                        return f"![{alt_text}](data:{mime_type};base64,{encoded_string})"
-                except Exception:
-                    pass
-            
-            return match.group(0)
-
-        return re.sub(r'!\[\[(.*?)\]\]', replace_wikilink_img, markdown)
             
     def _prepare_standalone_html(self, template: str, markdown: str, title: str) -> str:
         """Creates a fully autonomous HTML document."""

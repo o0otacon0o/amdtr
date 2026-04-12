@@ -647,12 +647,7 @@ class MainWindow(QMainWindow):
         )
         
         if path:
-            success = self._html_exporter.export(
-                markdown, 
-                Path(path), 
-                title=w.path().stem,
-                base_path=w.path().parent
-            )
+            success = self._html_exporter.export(markdown, Path(path), title=w.path().stem)
             if success:
                 self.statusBar().showMessage(f"Exported to {path}", 5000)
             else:
