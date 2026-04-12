@@ -27,6 +27,7 @@ class PreviewPanel(QWidget):
         # Load-Status verwalten
         self._page_loaded = False
         self._pending_updates = []
+        self._pending_base_path = None
         self._active_theme: PreviewTheme | None = None
         
         self._setup_ui()
@@ -38,6 +39,14 @@ class PreviewPanel(QWidget):
         self._active_theme = theme
         if self._page_loaded and hasattr(self, 'bridge'):
             self.bridge.set_theme_vars(theme.to_dict())
+
+    def set_base_path(self, path: Path) -> None:
+        """Setzt den Basispfad für relative Ressourcen (Bilder, Links)."""
+        if self._page_loaded and hasattr(self, 'bridge'):
+            self.bridge.set_base_path(str(path.absolute()))
+        else:
+            self._pending_base_path = path
+
     def _setup_ui(self) -> None:
         """UI-Layout initialisieren"""
         layout = QVBoxLayout(self)
@@ -140,6 +149,11 @@ class PreviewPanel(QWidget):
             if self._active_theme:
                 self.bridge.set_theme_vars(self._active_theme.to_dict())
             
+            # Basispfad anwenden falls schon gesetzt
+            if self._pending_base_path:
+                self.bridge.set_base_path(str(self._pending_base_path.absolute()))
+                self._pending_base_path = None
+
             # Pending Updates verarbeiten
             print(f"[DEBUG] Processing {len(self._pending_updates)} pending updates")
             for markdown_text, cursor_line in self._pending_updates:

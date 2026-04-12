@@ -127,6 +127,7 @@ class EditorPreviewSplit(QWidget):
         
         # Preview-Panel (QWebEngineView)
         self._preview = PreviewPanel()
+        self._preview.set_base_path(self._file_path.parent)
         
         # Add to splitter
         self._splitter.addWidget(self._editor)

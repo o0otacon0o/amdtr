@@ -166,6 +166,7 @@
                 this.content = document.getElementById('content');
                 this.bridge = null;
                 this.currentMarkdown = '';
+                this.basePath = '';
                 this.currentLineMap = new Map();
                 this.scrollLock = false;
                 
@@ -174,14 +175,21 @@
             }
             
             async initLibraries() {
-                // Marked.js Konfiguration mit Custom Renderer für Line-Mapping
+                // Marked.js Konfiguration mit Custom Renderer für Line-Mapping und Path-Resolution
                 if (typeof marked !== 'undefined') {
                     const renderer = new marked.Renderer();
                     
-                    // Hilfsfunktion für Line-Mapping
-                    const withLine = (html, line) => {
-                        if (line === undefined) return html;
-                        return html.replace(/^<([a-z1-6]+)/, `<$1 data-line="${line}"`);
+                    // Hilfsfunktion für Path-Resolution
+                    const resolvePath = (href) => {
+                        if (!href || !this.basePath) return href;
+                        // Nur relative Pfade (nicht http, https, data, oder absolute Pfade)
+                        if (href.match(/^(https?:\/\/|data:|#|\/|[a-zA-Z]:\\)/)) return href;
+                        
+                        // Normalisiere Slash/Backslash
+                        let base = this.basePath.replace(/\\/g, '/');
+                        if (!base.endsWith('/')) base += '/';
+                        
+                        return 'file:///' + base + href.replace(/\\/g, '/');
                     };
 
                     renderer.heading = (text, level, raw) => {
@@ -197,6 +205,16 @@
                     renderer.listitem = (text) => {
                         const line = this.getLineNumber(text);
                         return `<li data-line="${line}">${text}</li>`;
+                    };
+
+                    renderer.image = (href, title, text) => {
+                        const resolvedHref = resolvePath(href);
+                        return `<img src="${resolvedHref}" title="${title || ''}" alt="${text || ''}" style="max-width: 100%;">`;
+                    };
+
+                    renderer.link = (href, title, text) => {
+                        const resolvedHref = resolvePath(href);
+                        return `<a href="${resolvedHref}" title="${title || ''}">${text}</a>`;
                     };
 
                     renderer.code = (code, lang) => {
@@ -453,6 +471,17 @@
                 }
             }
             
+            updateBasePath(path) {
+                console.log('Updating base path to:', path);
+                this.basePath = path;
+                // Re-render to apply new path resolution
+                if (this.currentMarkdown) {
+                    const md = this.currentMarkdown;
+                    this.currentMarkdown = ''; // Force re-render
+                    this.updateContent(md);
+                }
+            }
+
             escapeHtml(text) {
                 const div = document.createElement('div');
                 div.textContent = text;
@@ -476,6 +505,7 @@
         
         // Global functions für Python-Bridge
         window.updateMarkdown = (md) => preview.updateContent(md);
+        window.updateBasePath = (path) => preview.updateBasePath(path);
         window.scrollToLine = (line) => {
             preview.lockScroll();
             preview.scrollToLine(line);

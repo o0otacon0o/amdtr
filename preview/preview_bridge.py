@@ -91,6 +91,17 @@ class PreviewBridge(QObject):
             vars_json = json.dumps(vars_dict)
             js_code = f"if (window.updateTheme) window.updateTheme({vars_json});"
             self._execute_javascript(js_code)
+
+    @pyqtSlot(str)
+    def set_base_path(self, path: str) -> None:
+        """
+        Sets the base path for relative resource resolution in the preview.
+        """
+        if hasattr(self, '_web_page') and self._web_page:
+            # Ensure path uses forward slashes for JS compatibility
+            path = path.replace("\\", "/")
+            js_code = f"if (window.updateBasePath) window.updateBasePath('{path}');"
+            self._execute_javascript(js_code)
         
     def _send_pending_markdown(self) -> None:
         """
