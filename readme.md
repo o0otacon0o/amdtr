@@ -4,6 +4,12 @@
 
 **amdtr** is a professional, high-performance Markdown editor built with **Python 3** and **PyQt6**. It bridges the gap between raw text editing and rich visual previews, focusing on speed, extensibility, and portable document workflows.
 
+## 📸 Screenshots
+
+| ![sc_01](screenshots/sc_01.png) | ![sc_02](screenshots/sc_02.png) |
+| :--- | :--- |
+| **Dark Theme & Auto-Outline**: Comprehensive workspace with automated Table of Contents. | **Light Theme & Mermaid**: High-performance rendering of complex diagrams. |
+
 ## 🚀 Key Features
 
 *   **⚡ High-Speed Live Preview:** Real-time rendering (150ms debounced) of Markdown, Mermaid diagrams, KaTeX math, and syntax-highlighted code blocks.
