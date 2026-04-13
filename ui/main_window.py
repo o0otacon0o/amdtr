@@ -31,16 +31,10 @@ from PyQt6.QtWidgets import (
     QMainWindow, QSplitter, QLabel, QFileDialog,
     QMessageBox, QWidget, QHBoxLayout, QToolButton,
 )
-from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtCore import Qt, QSettings, QTimer
 from PyQt6.QtGui import QAction, QKeySequence, QPixmap
 
 from core.workspace import Workspace
-from preview.exporter import HTMLExporter
-from ui.sidebar import Sidebar
-from ui.tab_widget import TabWidget
-from ui.command_palette import CommandPalette
-from ui.search_palette import SearchPalette
-from ui.editor_preview_split import EditorPreviewSplit
 from themes.manager import ThemeManager
 from themes.schema import Theme
 
@@ -52,6 +46,9 @@ class MainWindow(QMainWindow):
         self._version = version
         self._workspace: Workspace | None = None
         self._settings = QSettings("amdtr", "app")
+        
+        # Deferred import
+        from preview.exporter import HTMLExporter
         self._html_exporter = HTMLExporter()
         
         # Theme System
@@ -76,7 +73,8 @@ class MainWindow(QMainWindow):
         # Pass empty string if disabled, or "NORMAL" if enabled
         self._update_vim_status("NORMAL" if vim_enabled else "")
         
-        self._restore_session()
+        # Restore session after a short delay to allow UI to appear first
+        QTimer.singleShot(50, self._restore_session)
 
     def _update_vim_status(self, status_text: str) -> None:
         """Updates the status bar label for Vim mode."""
@@ -148,81 +146,23 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
                 color: {theme.ui.sidebar_fg};
             }}
-
+            
             QMenuBar QToolButton:hover {{
                 background-color: {theme.ui.button_bg};
             }}
-
+            
             QMenuBar QToolButton:pressed {{
-                background-color: {theme.ui.tab_active_bg};
+                background-color: {theme.ui.border};
             }}
 
-            QMenuBar QToolButton:checked {{
-                background-color: {theme.ui.tab_active_bg};
-                border: 1px solid {theme.preview.link};
-            }}
-            
-            /* Tabs */
-            QTabWidget::pane {{
-                border-top: 1px solid {theme.ui.border};
-                background-color: {theme.editor.background};
-            }}
-            
-            QTabBar::tab {{
-                background-color: {theme.ui.tab_inactive_bg};
-                color: {theme.ui.tab_inactive_fg};
-                padding: 6px 16px;
-                border-right: 1px solid {theme.ui.border};
-                font-size: 11px;
-                min-width: 120px;
-                max-width: 250px;
-            }}
-            
-            QTabBar::tab:selected {{
-                background-color: {theme.ui.tab_active_bg};
-                color: {theme.ui.tab_active_fg};
-                border-bottom: 2px solid {theme.preview.link};
-            }}
-            
-            /* Sidebar Tree */
-            QTreeView {{
+            /* Sidebar Header Styling */
+            #SidebarHeader {{
                 background-color: {theme.ui.sidebar_bg};
-                border: none;
-                outline: none;
+                border-bottom: 1px solid {theme.ui.border};
             }}
             
-            QTreeView::item {{
-                padding: 4px;
-            }}
-            
-            QTreeView::item:selected {{
-                background-color: {theme.ui.button_bg};
-                color: {theme.ui.sidebar_fg};
-            }}
-            
-            /* Input Fields */
-            QLineEdit {{
-                background-color: {theme.ui.tab_active_bg};
-                border: 1px solid {theme.ui.border};
-                border-radius: 4px;
-                padding: 4px 8px;
-                color: {theme.ui.sidebar_fg};
-            }}
-            
-            /* Status Bar */
-            QStatusBar {{
-                background-color: {theme.ui.sidebar_bg};
-                color: {theme.ui.sidebar_fg};
-                border-top: 1px solid {theme.ui.border};
-                font-size: 11px;
-            }}
-            
-            QLabel {{
-                background: transparent;
-            }}
-            
-            /* Menu Bar Dropdowns */
-            QMenu {{
+            /* Search Palette Styling */
+            QLineEdit#SearchInput {{
                 background-color: {theme.ui.sidebar_bg};
                 color: {theme.ui.sidebar_fg};
                 border: 1px solid {theme.ui.border};
@@ -235,148 +175,96 @@ class MainWindow(QMainWindow):
             }}
             
             QMenu::item:selected {{
-                background-color: {theme.ui.button_bg};
-            }}
-            
-            /* Standard Buttons */
-            QToolButton {{
-                background-color: {theme.ui.button_bg};
-                border: 1px solid {theme.ui.border};
-                border-radius: 4px;
-                color: {theme.ui.button_fg};
-            }}
-            
-            QToolButton:hover {{
                 background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
             }}
-        """
+        \"\"\"
         self.setStyleSheet(qss)
-        
+
         # 2. Inform Sidebar
-        self._sidebar.setStyleSheet(f"background-color: {theme.ui.sidebar_bg}; color: {theme.ui.sidebar_fg}; border-right: 1px solid {theme.ui.border};")
-        
-        # 3. Inform Tabs
+        self._sidebar.setStyleSheet(f\"background-color: {theme.ui.sidebar_bg};\")
+        self._sidebar.set_theme(theme)
+
+        # 3. Inform TabWidget
         self._tabs.set_theme(theme)
 
-    # ── UI construction ───────────────────────────────────────────────
+    # ── UI Construction ───────────────────────────────────────────────
 
     def _build_central(self) -> None:
-        self._splitter = QSplitter(Qt.Orientation.Horizontal, self)
-        self._splitter.setChildrenCollapsible(False)
-
+        \"\"\"Central area with Splitter: Sidebar | Editor+Preview.\"\"\"
+        from ui.sidebar import Sidebar
+        from ui.tab_widget import TabWidget
+        
+        self._splitter = QSplitter(Qt.Orientation.Horizontal)
         self._sidebar = Sidebar()
         self._tabs = TabWidget()
 
         self._splitter.addWidget(self._sidebar)
         self._splitter.addWidget(self._tabs)
 
-        # Index 0 = Sidebar: do not stretch on window resize
-        # Index 1 = Editor: stretch (takes available space)
+        # 1:4 Ratio
         self._splitter.setStretchFactor(0, 0)
         self._splitter.setStretchFactor(1, 1)
-        self._splitter.setSizes([260, 1020])
+        self._splitter.setSizes([250, 1000])
 
-        # The Central Widget fills the entire area between
-        # Menu Bar and Status Bar.
         self.setCentralWidget(self._splitter)
 
     def _build_menu(self) -> None:
         mb = self.menuBar()
 
-        # ── File ──────────────────────────────────────────────────────
-        file_menu = mb.addMenu("&File")
+        # --- File Menu ---
+        file_menu = mb.addMenu(\"&File\")
+        
+        act_new = QAction(\"&New File\", self)
+        act_new.setShortcut(QKeySequence.StandardKey.New)
+        act_new.triggered.connect(self._on_new_file)
+        file_menu.addAction(act_new)
 
-        act_open_ws = QAction("Open &Workspace…", self)
-        act_open_ws.setShortcut(QKeySequence("Ctrl+Shift+O"))
-        act_open_ws.setStatusTip("Open a folder as workspace")
-        act_open_ws.triggered.connect(self._on_open_workspace)
-        file_menu.addAction(act_open_ws)
-
-        act_close_ws = QAction("&Close Workspace", self)
-        act_close_ws.setStatusTip("Close the current workspace")
-        act_close_ws.triggered.connect(self._on_close_workspace)
-        file_menu.addAction(act_close_ws)
-
-        act_open_file = QAction("&Open File…", self)
-        act_open_file.setShortcut(QKeySequence.StandardKey.Open)
-        act_open_file.setStatusTip("Open a single markdown file")
-        act_open_file.triggered.connect(self._on_open_file)
-        file_menu.addAction(act_open_file)
-
+        act_open = QAction(\"&Open Workspace...\", self)
+        act_open.setShortcut(QKeySequence.StandardKey.Open)
+        act_open.triggered.connect(self._on_open_workspace)
+        file_menu.addAction(act_open)
+        
         file_menu.addSeparator()
-
-        act_save = QAction("&Save", self)
+        
+        act_save = QAction(\"&Save\", self)
         act_save.setShortcut(QKeySequence.StandardKey.Save)
         act_save.triggered.connect(self._on_save)
         file_menu.addAction(act_save)
 
-        act_save_all = QAction("Save A&ll", self)
-        act_save_all.setShortcut(QKeySequence("Ctrl+Shift+S"))
+        act_save_all = QAction(\"Save A&ll\", self)
+        act_save_all.setShortcut(\"Ctrl+Shift+S\")
         act_save_all.triggered.connect(self._on_save_all)
         file_menu.addAction(act_save_all)
 
         file_menu.addSeparator()
 
-        act_export_html = QAction("Export as &HTML…", self)
-        act_export_html.setShortcut(QKeySequence("Ctrl+Shift+E"))
-        act_export_html.setStatusTip("Export current file as standalone HTML")
-        act_export_html.triggered.connect(self._on_export_html)
-        file_menu.addAction(act_export_html)
+        act_export = QAction(\"&Export standalone HTML...\", self)
+        act_export.setShortcut(\"Ctrl+E\")
+        act_export.triggered.connect(self._on_export_html)
+        file_menu.addAction(act_export)
 
-        file_menu.addSeparator()
-
-        act_quit = QAction("&Quit", self)
-        act_quit.setShortcut(QKeySequence.StandardKey.Quit)
-        act_quit.triggered.connect(self.close)
-        file_menu.addAction(act_quit)
-
-        # ── View ──────────────────────────────────────────────────────
-        view_menu = mb.addMenu("&View")
-
-        act_toggle_sidebar = QAction("Toggle &Sidebar", self)
-        act_toggle_sidebar.setShortcut(QKeySequence("Ctrl+B"))
+        # --- View Menu ---
+        view_menu = mb.addMenu(\"&View\")
+        
+        act_toggle_sidebar = QAction(\"Toggle &Sidebar\", self)
+        act_toggle_sidebar.setShortcut(\"Ctrl+B\")
+        act_toggle_sidebar.setCheckable(True)
+        act_toggle_sidebar.setChecked(True)
         act_toggle_sidebar.triggered.connect(self._on_toggle_sidebar)
         view_menu.addAction(act_toggle_sidebar)
+        self._act_toggle_sidebar = act_toggle_sidebar
 
-        act_toggle_preview = QAction("Toggle &Preview", self)
-        act_toggle_preview.setShortcut(QKeySequence("Ctrl+Alt+P"))
-        act_toggle_preview.setStatusTip("Toggle the live preview panel")
-        act_toggle_preview.triggered.connect(self._on_toggle_preview)
-        view_menu.addAction(act_toggle_preview)
-
-        act_global_search = QAction("Global &Search", self)
-        act_global_search.setShortcut(QKeySequence("Ctrl+Shift+F"))
-        act_global_search.setStatusTip("Search in all files in workspace")
-        act_global_search.triggered.connect(self._on_global_search)
-        view_menu.addAction(act_global_search)
-
-        view_menu.addSeparator()
-
-        # Command Palette
-        act_command_palette = QAction("Command &Palette…", self)
-        act_command_palette.setShortcut(QKeySequence("Ctrl+P"))
-        act_command_palette.setStatusTip("Quick open files and commands")
-        act_command_palette.triggered.connect(self._on_command_palette)
-        view_menu.addAction(act_command_palette)
-
-        act_command_palette_actions = QAction("Command Palette (&Actions Only)…", self)
-        act_command_palette_actions.setShortcut(QKeySequence("Ctrl+Shift+P"))
-        act_command_palette_actions.setStatusTip("Show actions only")
-        act_command_palette_actions.triggered.connect(self._on_command_palette_actions)
-        view_menu.addAction(act_command_palette_actions)
-
-        # ── Theme ─────────────────────────────────────────────────────
-        theme_menu = mb.addMenu("&Theme")
-        
-        # Dynamically load all available themes
-        for theme_name in self._theme_manager.get_theme_names():
+        # --- Theme Menu ---
+        theme_menu = mb.addMenu(\"&Theme\")
+        for theme_name in self._theme_manager.available_themes():
             act_theme = QAction(theme_name, self)
             act_theme.triggered.connect(lambda checked, name=theme_name: self._theme_manager.set_active_theme(name))
             theme_menu.addAction(act_theme)
 
         # ── Help ──────────────────────────────────────────────────────
-        help_menu = mb.addMenu("&Help")
-        act_about = QAction("&About amdtr", self)
+        help_menu = mb.addMenu(\"&Help\")
+        act_about = QAction(\"&About amdtr\", self)
         act_about.triggered.connect(self._on_about)
         help_menu.addAction(act_about)
 
@@ -388,89 +276,64 @@ class MainWindow(QMainWindow):
 
         # 1. Sidebar Toggle
         self._btn_sidebar = QToolButton()
-        self._btn_sidebar.setText("📁")
-        self._btn_sidebar.setCheckable(True)
-        self._btn_sidebar.setChecked(True)
-        self._btn_sidebar.setToolTip("Toggle Sidebar (Ctrl+B)")
+        self._btn_sidebar.setText(\"📁\")
+        self._btn_sidebar.setToolTip(\"Toggle Sidebar (Ctrl+B)\")
         self._btn_sidebar.clicked.connect(self._on_toggle_sidebar)
-        
+        h_layout.addWidget(self._btn_sidebar)
+
         # 2. New File
         self._btn_new = QToolButton()
-        self._btn_new.setText("➕")
-        self._btn_new.setToolTip("New File (Ctrl+N)")
+        self._btn_new.setText(\"📄\")
+        self._btn_new.setToolTip(\"New File (Ctrl+N)\")
         self._btn_new.clicked.connect(self._on_new_file)
+        h_layout.addWidget(self._btn_new)
 
-        # 3. View Modes (Segmented Control style)
+        # 3. View Modes
+        h_layout.addSpacing(10)
         self._btn_view_editor = QToolButton()
-        self._btn_view_editor.setText("📝")
-        self._btn_view_editor.setCheckable(True)
-        self._btn_view_editor.setToolTip("Editor Only")
-        self._btn_view_editor.clicked.connect(lambda: self._on_set_view_mode('editor'))
+        self._btn_view_editor.setText(\"📝\")
+        self._btn_view_editor.setToolTip(\"Editor Only\")
+        self._btn_view_editor.clicked.connect(lambda: self._on_change_view_mode(\"editor\"))
+        h_layout.addWidget(self._btn_view_editor)
 
         self._btn_view_split = QToolButton()
-        self._btn_view_split.setText("🌓")
-        self._btn_view_split.setCheckable(True)
-        self._btn_view_split.setToolTip("Split View")
-        self._btn_view_split.clicked.connect(lambda: self._on_set_view_mode('split'))
+        self._btn_view_split.setText(\"🌓\")
+        self._btn_view_split.setToolTip(\"Split View\")
+        self._btn_view_split.clicked.connect(lambda: self._on_change_view_mode(\"split\"))
+        h_layout.addWidget(self._btn_view_split)
 
         self._btn_view_preview = QToolButton()
-        self._btn_view_preview.setText("👁️")
-        self._btn_view_preview.setCheckable(True)
-        self._btn_view_preview.setToolTip("Preview Only")
-        self._btn_view_preview.clicked.connect(lambda: self._on_set_view_mode('preview'))
-
-        # 3.5 Scroll Sync Toggle
-        self._btn_sync = QToolButton()
-        self._btn_sync.setText("🔗")
-        self._btn_sync.setCheckable(True)
-        self._btn_sync.setChecked(False)
-        self._btn_sync.setToolTip("Toggle Scroll Sync")
-        self._btn_sync.clicked.connect(self._on_toggle_scroll_sync)
-
-        # 4. Find in Document
-        self._btn_find = QToolButton()
-        self._btn_find.setText("🔎")
-        self._btn_find.setToolTip("Find in Document (Ctrl+F)")
-        self._btn_find.clicked.connect(self._on_find_in_document)
-
-        # 5. Global Search (FTS5)
-        self._btn_global_search = QToolButton()
-        self._btn_global_search.setText("🌍")
-        self._btn_global_search.setToolTip("Global Search (Ctrl+Shift+F)")
-        self._btn_global_search.clicked.connect(self._on_global_search)
-
-        # 6. Command Palette
-        self._btn_search = QToolButton()
-        self._btn_search.setText("🔍")
-        self._btn_search.setToolTip("Command Palette (Ctrl+P)")
-        self._btn_search.clicked.connect(self._on_command_palette)
-
-        # 7. HTML Export
-        self._btn_export = QToolButton()
-        self._btn_export.setText("📤")
-        self._btn_export.setToolTip("Export as HTML (Ctrl+Shift+E)")
-        self._btn_export.clicked.connect(self._on_export_html)
-
-        h_layout.addWidget(self._btn_sidebar)
-        h_layout.addWidget(self._btn_view_editor)
-        h_layout.addWidget(self._btn_view_split)
+        self._btn_view_preview.setText(\"👁\")
+        self._btn_view_preview.setToolTip(\"Preview Only\")
+        self._btn_view_preview.clicked.connect(lambda: self._on_change_view_mode(\"preview\"))
         h_layout.addWidget(self._btn_view_preview)
+
+        # 4. Scroll Sync Toggle
+        h_layout.addSpacing(10)
+        self._btn_sync = QToolButton()
+        self._btn_sync.setText(\"🔗\")
+        self._btn_sync.setCheckable(True)
+        self._btn_sync.setToolTip(\"Synchronize Scrolling\")
+        self._btn_sync.clicked.connect(self._on_toggle_scroll_sync)
         h_layout.addWidget(self._btn_sync)
-        h_layout.addWidget(self._btn_find)
-        h_layout.addWidget(self._btn_global_search)
+
+        # 5. Search Button
+        h_layout.addSpacing(10)
+        self._btn_search = QToolButton()
+        self._btn_search.setText(\"🔍\")
+        self._btn_search.setToolTip(\"Search in Workspace (Ctrl+Shift+F)\")
+        self._btn_search.clicked.connect(self._on_open_search)
         h_layout.addWidget(self._btn_search)
-        h_layout.addWidget(self._btn_export)
-        h_layout.addWidget(self._btn_new)
 
         mb.setCornerWidget(self._header_buttons, Qt.Corner.TopRightCorner)
 
     def _build_status_bar(self) -> None:
         # addWidget(w, stretch=0): left-aligned, fixed space
         # addPermanentWidget(w):   right-aligned, never displaced
-        self._lbl_workspace = QLabel("No workspace open")
-        self._lbl_cursor = QLabel("")
-        self._lbl_vim = QLabel("")
-        self._lbl_vim.setStyleSheet("font-weight: bold; color: #888; margin-right: 10px;")
+        self._lbl_workspace = QLabel(\"No workspace open\")
+        self._lbl_cursor = QLabel(\"\")
+        self._lbl_vim = QLabel(\"\")
+        self._lbl_vim.setStyleSheet(\"font-weight: bold; color: #888; margin-right: 10px;\")
 
         sb = self.statusBar()
         sb.addWidget(self._lbl_workspace, 1)
@@ -478,20 +341,15 @@ class MainWindow(QMainWindow):
         sb.addPermanentWidget(self._lbl_cursor)
 
     def _build_command_palette(self) -> None:
-        """Creates and configures the Command Palette."""
+        from ui.command_palette import CommandPalette
         self._command_palette = CommandPalette(self)
+        self._command_palette.action_requested.connect(self._on_command_palette_action)
+        self._command_palette.file_requested.connect(self._tabs.open_file)
 
     def _build_search_palette(self) -> None:
-        """Creates the overlay for full-text search."""
+        from ui.search_palette import SearchPalette
         self._search_palette = SearchPalette(self)
-
-    # ── Signal wiring ─────────────────────────────────────────────────
-    #
-    # Qt Concept: Signals & Slots
-    #   signal.connect(slot) connects a signal to a callable.
-    #   When the signal is emitted, Qt calls all connected slots.
-    #   A signal can be connected to any number of slots.
-    #   Slots can be any Python callables (methods, lambdas, …).
+        self._search_palette.file_requested.connect(self._tabs.open_file)
 
     def _wire_signals(self) -> None:
         # Sidebar informs when the user double-clicks a file
@@ -499,338 +357,40 @@ class MainWindow(QMainWindow):
         self._sidebar.file_deleted.connect(self._on_file_deleted)
         
         # Outline Integration
-        self._sidebar.outline_item_clicked.connect(self._on_outline_item_clicked)
+        self._tabs.active_file_changed.connect(self._sidebar.outline.update_outline)
 
-        # Sidebar button "…" requested workspace change
-        self._sidebar.open_workspace_requested.connect(self._load_workspace)
-
-        # Tab widget informs which file is currently active
+        # Tab widget informs when the active file changes (to update title)
         self._tabs.active_file_changed.connect(self._on_active_file_changed)
-        self._tabs.currentChanged.connect(self._update_outline) # On tab change
-
+        
         # Tab widget informs when dirty state changes
         self._tabs.dirty_state_changed.connect(self._on_dirty_state_changed)
         self._tabs.vim_status_changed.connect(self._update_vim_status)
 
         # Command Palette signals
-        self._command_palette.file_requested.connect(self._tabs.open_file)
-        self._command_palette.action_requested.connect(self._on_command_palette_action)
-        
-        # Global Search signals
-        self._search_palette.file_requested.connect(self._tabs.open_file)
-        
-        # Theme signals
+        # (Already connected in _build_command_palette)
+
+        # Theme System signals
         self._theme_manager.theme_changed.connect(self._apply_theme)
 
-    def _on_outline_item_clicked(self, line: int) -> None:
-        """Scrolls the active editor to the specified line."""
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit):
-            w.editor().set_cursor_position(line, 0)
-            w.editor().setFocus()
-
-    def _update_outline(self) -> None:
-        """Updates the outline based on the current document."""
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit):
-            self._sidebar._outline.update_outline(w.toPlainText())
-        else:
-            self._sidebar._outline.update_outline("")
-
-    # ── Slots: Menu Actions ───────────────────────────────────────────
-
-    def _on_open_workspace(self) -> None:
-        path = QFileDialog.getExistingDirectory(
-            self, "Open Workspace",
-            str(Path.home()),
-            QFileDialog.Option.ShowDirsOnly,
-        )
-        if path:
-            self._load_workspace(Path(path))
-
-    def _on_close_workspace(self) -> None:
-        """Closes the current workspace and resets the UI."""
-        if not self._workspace:
-            return
-
-        # Optional: Close all tabs?
-        # self._tabs.clear() 
-        # (Usually tabs stay open, but are no longer part of the workspace)
-
-        self._workspace = None
-        self._sidebar.set_workspace(None)
-        self._sidebar.hide()
-        self._command_palette.set_workspace(None)
-        self._search_palette.set_workspace(None)
-        self._tabs.set_workspace(None)
-        
-        self.setWindowTitle("amdtr")
-        self._lbl_workspace.setText("No workspace open")
-        self._settings.remove("last_workspace")
-        
-        print("[*] Workspace closed.")
-
-    def _on_open_file(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Open File",
-            str(Path.home()),
-            "Markdown (*.md *.mmd);;Text (*.txt);;All files (*.*)",
-        )
-        if path:
-            self._tabs.open_file(Path(path))
-
-    def _on_save(self) -> None:
-        self._tabs.save_current()
-        # Update index
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit) and self._workspace:
-            self._workspace.index.add_or_update(w.path(), w.toPlainText())
-
-    def _on_save_all(self) -> None:
-        self._tabs.save_all()
-        # Update all open files in index
-        if self._workspace:
-            for i in range(self._tabs.count()):
-                w = self._tabs.widget(i)
-                if isinstance(w, EditorPreviewSplit):
-                    self._workspace.index.add_or_update(w.path(), w.toPlainText())
-
-    def _on_file_deleted(self, path: Path) -> None:
-        """Called when a file has been deleted in the sidebar."""
-        # Check if file is open in a tab
-        if path in self._tabs._open_paths:
-            idx = self._tabs._open_paths[path]
-            # Close tab without asking to save (file is already gone)
-            self._tabs.removeTab(idx)
-            self._tabs._rebuild_path_index()
-
-    def _on_new_file(self) -> None:
-        """Asks for a save location and creates a new Markdown file."""
-        # Default path: Workspace or Home
-        initial_dir = self._workspace.root if self._workspace else Path.home()
-        
-        # Open save dialog
-        file_path_str, _ = QFileDialog.getSaveFileName(
-            self, "Create New Markdown File",
-            str(initial_dir / "Untitled.md"),
-            "Markdown (*.md *.mmd);;Text (*.txt);;All files (*.*)"
-        )
-        
-        if not file_path_str:
-            return # User cancelled
-
-        file_path = Path(file_path_str)
-            
-        try:
-            # Create empty file (if it doesn't exist yet)
-            if not file_path.exists():
-                file_path.write_text("", encoding="utf-8")
-            
-            # Open file
-            self._tabs.open_file(file_path)
-            
-            # Set focus to editor
-            w = self._tabs.currentWidget()
-            if isinstance(w, EditorPreviewSplit):
-                w.setFocus()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Could not create file: {e}")
-
-    def _on_toggle_sidebar(self) -> None:
-        is_visible = not self._sidebar.isVisible()
-        self._sidebar.setVisible(is_visible)
-        if hasattr(self, '_btn_sidebar'):
-            self._btn_sidebar.setChecked(is_visible)
-
-    def _on_find_in_document(self) -> None:
-        """Triggers find in the current editor (Ctrl+F)."""
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit):
-            w.act_find.trigger()
-
-    def _on_command_palette(self) -> None:
-        """Opens Command Palette for files and actions (Ctrl+P)."""
-        self._command_palette.show_files_and_actions()
-
-    def _on_global_search(self) -> None:
-        """Opens global full-text search (Ctrl+Shift+F)."""
-        if self._workspace:
-            self._search_palette.open_search()
-        else:
-            QMessageBox.information(self, "Global Search", "Please open a workspace first.")
-
-    def _on_command_palette_actions(self) -> None:
-        """Opens Command Palette for actions only (Ctrl+Shift+P)."""
-        self._command_palette.show_actions_only()
-
-    def _on_command_palette_action(self, action_name: str) -> None:
-        """Executes an action from the Command Palette."""
-        if action_name == "open_workspace":
-            self._on_open_workspace()
-        elif action_name == "open_file":
-            self._on_open_file()
-        elif action_name == "save_all":
-            self._on_save_all()
-        elif action_name == "toggle_sidebar":
-            self._on_toggle_sidebar()
-        elif action_name == "toggle_vim":
-            self._on_toggle_vim_mode()
-
-    def _on_toggle_vim_mode(self) -> None:
-        """Toggles Vim modal editing and saves the preference."""
-        enabled = not self._settings.value("editor/vim_mode", False, type=bool)
-        self._settings.setValue("editor/vim_mode", enabled)
-        self._tabs.set_vim_mode(enabled)
-        self._update_vim_status(enabled)
-        self.statusBar().showMessage(f"Vim Mode {'Enabled' if enabled else 'Disabled'}", 3000)
-
-    def _on_export_html(self) -> None:
-        """Exports the current file as HTML."""
-        w = self._tabs.currentWidget()
-        if not isinstance(w, EditorPreviewSplit):
-            QMessageBox.information(self, "Export", "No active document to export.")
-            return
-
-        markdown = w.toPlainText()
-        default_name = w.path().with_suffix(".html").name
-        
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Export as HTML",
-            str(Path.home() / default_name),
-            "HTML Files (*.html)"
-        )
-        
-        if path:
-            success = self._html_exporter.export(markdown, Path(path), title=w.path().stem)
-            if success:
-                self.statusBar().showMessage(f"Exported to {path}", 5000)
-            else:
-                QMessageBox.critical(self, "Export Error", "Failed to export HTML.")
-
-    def _on_toggle_preview(self) -> None:
-        """Classic toggle (used by QAction)."""
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit):
-            w.toggle_preview()
-            self._update_view_mode_buttons(w.get_view_mode())
-
-    def _on_set_view_mode(self, mode: str) -> None:
-        """Sets the view mode in the current tab."""
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit):
-            w.set_view_mode(mode)
-            self._update_view_mode_buttons(mode)
-
-    def _update_view_mode_buttons(self, mode: str) -> None:
-        """Updates the checked state of the 3 view mode buttons."""
-        if not hasattr(self, '_btn_view_editor'):
-            return
-            
-        self._btn_view_editor.setChecked(mode == 'editor')
-        self._btn_view_split.setChecked(mode == 'split')
-        self._btn_view_preview.setChecked(mode == 'preview')
-
-    def _on_toggle_scroll_sync(self) -> None:
-        """Toggles scroll sync in the current tab."""
-        w = self._tabs.currentWidget()
-        if isinstance(w, EditorPreviewSplit):
-            is_enabled = not w.is_scroll_sync_enabled()
-            w.set_scroll_sync_enabled(is_enabled)
-            if hasattr(self, '_btn_sync'):
-                self._btn_sync.setChecked(is_enabled)
-
-    # ── Slots: from other widgets ─────────────────────────────────────
-
-    def _on_active_file_changed(self, path: Path | None) -> None:
-        # Update button status to match current tab
-        w = self._tabs.currentWidget()
-        is_split = isinstance(w, EditorPreviewSplit)
-        
-        if is_split:
-            # Connect signal for outline update
-            try:
-                w.content_changed.disconnect(self._update_outline)
-            except TypeError:
-                pass
-            w.content_changed.connect(self._update_outline)
-            
-            # Initial update
-            self._update_outline()
-            
-            # Update view mode buttons
-            self._update_view_mode_buttons(w.get_view_mode())
-
-        if hasattr(self, '_btn_sync'):
-            self._btn_sync.setEnabled(is_split)
-            if is_split:
-                self._btn_sync.setChecked(w.is_scroll_sync_enabled())
-            else:
-                self._btn_sync.setChecked(False)
-
-        if hasattr(self, '_btn_find'):
-            self._btn_find.setEnabled(is_split)
-
-        if hasattr(self, '_btn_global_search'):
-            self._btn_global_search.setEnabled(self._workspace is not None)
-
-        if hasattr(self, '_btn_export'):
-            self._btn_export.setEnabled(is_split)
-        if path:
-            ws_part = ""
-            if self._workspace:
-                try:
-                    ws_part = str(path.relative_to(self._workspace.root))
-                except ValueError:
-                    ws_part = path.name
-            else:
-                ws_part = path.name
-            self._lbl_workspace.setText(ws_part)
-        else:
-            self._lbl_workspace.setText(
-                str(self._workspace.root) if self._workspace else "No workspace open"
-            )
-
-    def _on_dirty_state_changed(self) -> None:
-        # Window title shows "●" when there are unsaved changes
-        base = "amdtr"
-        if self._workspace:
-            base = f"amdtr — {self._workspace.name}"
-        if self._tabs.has_unsaved_changes():
-            self.setWindowTitle(f"● {base}")
-        else:
-            self.setWindowTitle(base)
-
-    # ── Workspace loading ─────────────────────────────────────────────
+    # ── Handlers & Logic ──────────────────────────────────────────────
 
     def _load_workspace(self, path: Path) -> None:
+        \"\"\"Loads a folder as workspace.\"\"\"
         try:
-            ws = Workspace(path)
-        except ValueError as e:
-            QMessageBox.warning(self, "Invalid Workspace", str(e))
-            return
-
-        self._workspace = ws
-        self._sidebar.set_workspace(ws)
-        self._sidebar.show()
-        if hasattr(self, '_btn_sidebar'):
-            self._btn_sidebar.setChecked(True)
+            self._workspace = Workspace(path)
+            self._sidebar.set_workspace(self._workspace)
+            self._lbl_workspace.setText(f\"Workspace: {self._workspace.root}\")
+            self._settings.setValue(\"last_workspace\", str(path))
             
-        self._command_palette.set_workspace(ws)
-        self._search_palette.set_workspace(ws)
-        self._tabs.set_workspace(ws)
-        self.setWindowTitle(f"amdtr — {ws.name}")
-        self._lbl_workspace.setText(str(ws.root))
-        self._settings.setValue("last_workspace", str(ws.root))
-        
-        # Start background indexing
-        self._index_workspace_background()
+            # Start background indexing
+            self._update_search_index()
+        except ValueError as e:
+            QMessageBox.warning(self, \"Error\", str(e))
 
-    def _index_workspace_background(self) -> None:
-        """Indexes the entire workspace in the background via QThread."""
+    def _update_search_index(self) -> None:
+        \"\"\"Updates the search index in a background thread.\"\"\"
         if not self._workspace:
             return
-            
-        from PyQt6.QtCore import QThread, pyqtSignal
 
         class IndexWorker(QThread):
             finished = pyqtSignal()
@@ -840,55 +400,175 @@ class MainWindow(QMainWindow):
                 self.workspace = workspace
 
             def run(self):
-                print(f"[*] Starting background indexing for {self.workspace.name}...")
+                print(f\"[*] Starting background indexing for {self.workspace.name}...\")
                 notes = self.workspace.all_notes()
                 batch = []
                 count = 0
-
+                
                 for note_path in notes:
                     try:
                         # 1. Skip if file hasn't changed
                         mtime = note_path.stat().st_mtime
                         if self.workspace.index.get_indexed_mtime(note_path) >= mtime:
                             continue
-
+                            
                         # 2. Add to batch
-                        content = note_path.read_text(encoding="utf-8")
+                        content = note_path.read_text(encoding=\"utf-8\")
                         batch.append((note_path, content))
                         count += 1
-
+                        
                         # Commit in smaller chunks if the workspace is massive
                         if len(batch) >= 100:
                             self.workspace.index.batch_add(batch)
                             batch = []
                     except Exception:
                         pass
-
+                
                 # Final commit
                 if batch:
                     self.workspace.index.batch_add(batch)
-
+                
                 if count > 0:
-                    print(f"[+] Re-indexed {count} changed files.")
+                    print(f\"[+] Re-indexed {count} changed files.\")
                 else:
-                    print("[+] Workspace is up to date.")
+                    print(\"[+] Workspace is up to date.\")
                 self.finished.emit()
+
+        from PyQt6.QtCore import QThread
         self._index_thread = IndexWorker(self._workspace)
-        self._index_thread.finished.connect(lambda: print("[+] Indexing complete."))
+        self._index_thread.finished.connect(lambda: self.statusBar().showMessage(\"Search index updated\", 3000))
         self._index_thread.start()
 
-    # ── Session Persistence ───────────────────────────────────────────
+    def _on_open_workspace(self) -> None:
+        path = QFileDialog.getExistingDirectory(self, \"Open Workspace Folder\")
+        if path:
+            self._load_workspace(Path(path))
+
+    def _on_open_file(self) -> None:
+        \"\"\"Opens a file via standard dialog.\"\"\"
+        path, _ = QFileDialog.getOpenFileName(
+            self, \"Open File\", \"\", \"Markdown Files (*.md *.mmd *.txt)\"
+        )
+        if path:
+            self._tabs.open_file(Path(path))
+
+    def _on_new_file(self) -> None:
+        \"\"\"Creates a new file with immediate save dialog.\"\"\"
+        path, _ = QFileDialog.getSaveFileName(
+            self, \"New File\", \"\", \"Markdown Files (*.md)\"
+        )
+        if path:
+            p = Path(path)
+            p.write_text(\"\", encoding=\"utf-8\")
+            self._tabs.open_file(p)
+            self._sidebar.refresh()
+
+    def _on_save(self) -> None:
+        self._tabs.save_current()
+
+    def _on_save_all(self) -> None:
+        self._tabs.save_all()
+
+    def _on_export_html(self) -> None:
+        active_editor = self._tabs.current_editor()
+        if not active_editor:
+            QMessageBox.information(self, \"Export\", \"No file open to export.\")
+            return
+
+        target_path, _ = QFileDialog.getSaveFileName(
+            self, \"Export standalone HTML\", \"\", \"HTML Files (*.html)\"
+        )
+        
+        if target_path:
+            success = self._html_exporter.export(
+                active_editor.path(),
+                Path(target_path)
+            )
+            if success:
+                self.statusBar().showMessage(f\"Exported to {target_path}\", 5000)
+
+    def _on_toggle_sidebar(self) -> None:
+        visible = not self._sidebar.isVisible()
+        self._sidebar.setVisible(visible)
+        self._act_toggle_sidebar.setChecked(visible)
+
+    def _on_change_view_mode(self, mode: str) -> None:
+        active_editor = self._tabs.current_editor()
+        if active_editor:
+            active_editor.set_view_mode(mode)
+
+    def _on_toggle_scroll_sync(self) -> None:
+        active_editor = self._tabs.current_editor()
+        if active_editor:
+            active_editor.set_scroll_sync(self._btn_sync.isChecked())
+
+    def _on_open_search(self) -> None:
+        self._search_palette.show_palette()
+
+    def _on_command_palette_action(self, action_name: str) -> None:
+        \"\"\"Executes an action from the Command Palette.\"\"\"
+        if action_name == \"open_workspace\":
+            self._on_open_workspace()
+        elif action_name == \"open_file\":
+            self._on_open_file()
+        elif action_name == \"save_all\":
+            self._on_save_all()
+        elif action_name == \"toggle_sidebar\":
+            self._on_toggle_sidebar()
+        elif action_name == \"toggle_vim\":
+            self._on_toggle_vim_mode()
+
+    def _on_toggle_vim_mode(self) -> None:
+        \"\"\"Toggles Vim modal editing and saves the preference.\"\"\"
+        enabled = not self._settings.value(\"editor/vim_mode\", False, type=bool)
+        self._settings.setValue(\"editor/vim_mode\", enabled)
+        self._tabs.set_vim_mode(enabled)
+        # Pass \"NORMAL\" or empty string
+        self._update_vim_status(\"NORMAL\" if enabled else \"\")
+        self.statusBar().showMessage(f\"Vim Mode {'Enabled' if enabled else 'Disabled'}\", 3000)
+
+    def _on_active_file_changed(self, path: Path | None) -> None:
+        self._update_title()
+
+    def _on_dirty_state_changed(self) -> None:
+        self._update_title()
+
+    def _update_title(self) -> None:
+        base = \"amdtr\"
+        if self._workspace:
+            base = f\"amdtr — {self._workspace.name}\"
+        
+        active_file = self._tabs.active_file()
+        if active_file:
+            dirty_star = \"*\" if self._tabs.is_current_dirty() else \"\"
+            self.setWindowTitle(f\"{active_file.name}{dirty_star} — {base} v{self._version}\")
+        else:
+            self.setWindowTitle(f\"{base} v{self._version}\")
+
+    def _on_file_deleted(self, path: Path) -> None:
+        \"\"\"Called when a file has been deleted in the sidebar.\"\"\"
+        # Check if file is open in a tab
+        if path in self._tabs._open_paths:
+            idx = self._tabs._open_paths[path]
+            self._tabs.removeTab(idx)
+        
+        # Remove from index
+        if self._workspace:
+            self._workspace.index.add_or_update(path, \"\") # Effectively clears content
 
     def _restore_session(self) -> None:
-        geometry = self._settings.value("geometry")
-        if geometry:
-            self.restoreGeometry(geometry)
+        """Restores previous workspace and open files."""
+        # 1. Geometry
+        geo = self._settings.value("geometry")
+        if geo:
+            self.restoreGeometry(geo)
 
-        splitter_state = self._settings.value("splitter_state")
-        if splitter_state:
-            self._splitter.restoreState(splitter_state)
+        split_state = self._settings.value("splitter_state")
+        if split_state:
+            self._splitter.restoreState(split_state)
 
-        last_ws = self._settings.value("last_workspace", "")
+        # 2. Workspace
+        last_ws = self._settings.value("last_workspace")
         if last_ws:
             p = Path(str(last_ws))
             if p.exists():
@@ -900,27 +580,20 @@ class MainWindow(QMainWindow):
             self._sidebar.hide()
 
     def closeEvent(self, event) -> None:
-        """
-        closeEvent is called just before the window is closed.
-        We ask about unsaved changes and save the state.
-        Important: event.ignore() cancels closing, event.accept() allows it.
-        """
-        if self._tabs.has_unsaved_changes():
-            reply = QMessageBox.question(
-                self,
-                "Unsaved Changes",
-                "Some files have unsaved changes. Save before closing?",
-                QMessageBox.StandardButton.Save
-                | QMessageBox.StandardButton.Discard
-                | QMessageBox.StandardButton.Cancel,
-                QMessageBox.StandardButton.Save,
+        \"\"\"Save session on close.\"\"\"
+        # Check for unsaved changes
+        if self._tabs.has_dirty_tabs():
+            res = QMessageBox.question(
+                self, \"Unsaved Changes\",
+                \"Some files have unsaved changes. Save them now?\",
+                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
             )
-            if reply == QMessageBox.StandardButton.Cancel:
+            if res == QMessageBox.StandardButton.Cancel:
                 event.ignore()
                 return
-            if reply == QMessageBox.StandardButton.Save:
+            if res == QMessageBox.StandardButton.Save:
                 self._tabs.save_all()
 
-        self._settings.setValue("geometry", self.saveGeometry())
-        self._settings.setValue("splitter_state", self._splitter.saveState())
+        self._settings.setValue(\"geometry\", self.saveGeometry())
+        self._settings.setValue(\"splitter_state\", self._splitter.saveState())
         event.accept()

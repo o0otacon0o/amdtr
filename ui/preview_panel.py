@@ -1,16 +1,13 @@
 """
 Preview Panel mit QWebEngineView für Live-Markdown-Rendering
 """
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEnginePage
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt6.QtWebChannel import QWebChannel
-from PyQt6.QtCore import QUrl, pyqtSignal, QTimer
+from PyQt6.QtCore import QUrl, pyqtSignal, QTimer, Qt
 from pathlib import Path
 import json
 import os
 import sys
-
 
 from themes.schema import PreviewTheme
 
@@ -26,13 +23,35 @@ class PreviewPanel(QWidget):
         
         # Load-Status verwalten
         self._page_loaded = False
+        self._web_engine_initialized = False
         self._pending_updates = []
         self._pending_base_path = None
         self._active_theme: PreviewTheme | None = None
         
         self._setup_ui()
-        self._setup_web_channel()
-        self._load_preview_page()
+
+    def _ensure_web_engine(self):
+        """Lazy initialization of WebEngine."""
+        if self._web_engine_initialized:
+            return
+            
+        try:
+            from PyQt6.QtWebEngineWidgets import QWebEngineView
+            from PyQt6.QtWebEngineCore import QWebEnginePage
+            
+            self.QWebEngineView = QWebEngineView
+            self.QWebEnginePage = QWebEnginePage
+            
+            # Replace placeholder with actual WebView
+            self.placeholder.hide()
+            self.web_view = self.QWebEngineView()
+            self.layout().addWidget(self.web_view)
+            
+            self._setup_web_channel()
+            self._load_preview_page()
+            self._web_engine_initialized = True
+        except ImportError as e:
+            self.placeholder.setText(f"Error loading WebEngine: {e}")
 
     def set_theme(self, theme: PreviewTheme) -> None:
         """Wendet ein Preview-Theme (CSS-Variablen) an."""
@@ -52,9 +71,10 @@ class PreviewPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # QWebEngineView für HTML-Preview
-        self.web_view = QWebEngineView()
-        layout.addWidget(self.web_view)
+        self.placeholder = QLabel("Initializing Preview Engine...")
+        self.placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.placeholder.setStyleSheet("color: #888; font-style: italic;")
+        layout.addWidget(self.placeholder)
         
     def _setup_web_channel(self) -> None:
         """QWebChannel für Python ↔ JavaScript Kommunikation"""
@@ -118,16 +138,13 @@ class PreviewPanel(QWidget):
         self.web_view.setHtml(html_content)
         
     def update_markdown(self, markdown_text: str, cursor_line: int = 0) -> None:
-        """Markdown-Content an Preview senden
-        
-        Args:
-            markdown_text: Raw Markdown-String
-            cursor_line: Aktuelle Cursor-Position für Scroll-Sync
-        """
-        print(f"[DEBUG] PreviewPanel.update_markdown called with {len(markdown_text)} chars")
-        
+        """Markdown-Content an Preview senden"""
+        if not self._web_engine_initialized:
+            self._ensure_web_engine()
+            self._pending_updates.append((markdown_text, cursor_line))
+            return
+
         if not self._page_loaded:
-            print(f"[DEBUG] Page not loaded yet, queuing update")
             self._pending_updates.append((markdown_text, cursor_line))
             return
             
@@ -135,13 +152,9 @@ class PreviewPanel(QWidget):
             self.bridge.update_markdown(markdown_text)
             if cursor_line > 0:
                 self.bridge.scroll_to_line(cursor_line)
-        else:
-            print(f"[DEBUG] PreviewPanel: No bridge available!")
             
     def _on_page_loaded(self, success: bool) -> None:
         """HTML-Seite wurde vollständig geladen"""
-        print(f"[DEBUG] PreviewPanel: Page loaded successfully={success}")
-        
         if success:
             self._page_loaded = True
             
@@ -155,7 +168,6 @@ class PreviewPanel(QWidget):
                 self._pending_base_path = None
 
             # Pending Updates verarbeiten
-            print(f"[DEBUG] Processing {len(self._pending_updates)} pending updates")
             for markdown_text, cursor_line in self._pending_updates:
                 if hasattr(self, 'bridge'):
                     self.bridge.update_markdown(markdown_text)
@@ -163,8 +175,6 @@ class PreviewPanel(QWidget):
                         self.bridge.scroll_to_line(cursor_line)
             
             self._pending_updates.clear()
-        else:
-            print(f"[DEBUG] Page loading failed")
             
     def scroll_to_line_number(self, line: int) -> None:
         """Preview zu bestimmter Zeilennummer scrollen"""
@@ -172,12 +182,12 @@ class PreviewPanel(QWidget):
             self.bridge.scroll_to_line(line)
 
     def find_text(self, text: str, forward: bool = True) -> None:
-        """
-        Sucht nach Text in der HTML-Vorschau.
-        Highlights werden automatisch durch QWebEnginePage gesetzt.
-        """
-        options = QWebEnginePage.FindFlag(0)
+        """Sucht nach Text in der HTML-Vorschau."""
+        if not self._web_engine_initialized:
+            return
+
+        options = self.QWebEnginePage.FindFlag(0)
         if not forward:
-            options |= QWebEnginePage.FindFlag.FindBackward
+            options |= self.QWebEnginePage.FindFlag.FindBackward
 
         self.web_view.page().findText(text, options)
