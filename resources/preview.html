@@ -230,8 +230,8 @@
                         extensions: [
                             {
                                 name: 'blockMath',
-                                level: 'inline', // 'inline' allow usage inside paragraphs/tables
-                                start(src) { return src.indexOf('$'); },
+                                level: 'inline', 
+                                start(src) { return src.indexOf('$$'); },
                                 tokenizer(src, tokens) {
                                     const match = src.match(/^\$\$([\s\S]+?)\$\$/);
                                     if (match) {
@@ -239,7 +239,7 @@
                                     }
                                 },
                                 renderer(token) {
-                                    return `<div class="katex-display">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</div>`;
+                                    return `<span class="katex-display" style="display: block; text-align: center; margin: 0.5em 0;">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</span>`;
                                 }
                             },
                             {
@@ -263,7 +263,7 @@
                     marked.use(katexExtension);
                     marked.setOptions({
                         renderer: renderer,
-                        breaks: true,
+                        breaks: false, // Standard Markdown behavior (single newline = space)
                         gfm: true
                     });
                 }
