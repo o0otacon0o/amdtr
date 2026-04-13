@@ -32,7 +32,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QHBoxLayout, QToolButton,
 )
 from PyQt6.QtCore import Qt, QSettings
-from PyQt6.QtGui import QAction, QKeySequence
+from PyQt6.QtGui import QAction, QKeySequence, QPixmap
 
 from core.workspace import Workspace
 from preview.exporter import HTMLExporter
@@ -47,8 +47,9 @@ from themes.schema import Theme
 
 class MainWindow(QMainWindow):
 
-    def __init__(self) -> None:
+    def __init__(self, version: str = "0.0.0") -> None:
         super().__init__()
+        self._version = version
         self._workspace: Workspace | None = None
         self._settings = QSettings("amdtr", "app")
         self._html_exporter = HTMLExporter()
@@ -56,7 +57,7 @@ class MainWindow(QMainWindow):
         # Theme System
         self._theme_manager = ThemeManager()
 
-        self.setWindowTitle("amdtr")
+        self.setWindowTitle(f"amdtr v{self._version}")
         self.resize(1280, 800)
 
         self._build_central()
@@ -70,6 +71,28 @@ class MainWindow(QMainWindow):
         self._apply_theme(self._theme_manager.active_theme())
         
         self._restore_session()
+
+    def _on_about(self) -> None:
+        """Shows the about dialog."""
+        from main import resource_path
+        
+        msg = QMessageBox(self)
+        msg.setWindowTitle("About amdtr")
+        
+        logo_path = resource_path("amdtr-logo.png")
+        if logo_path.exists():
+            pixmap = QPixmap(str(logo_path)).scaledToWidth(128, Qt.TransformationMode.SmoothTransformation)
+            msg.setIconPixmap(pixmap)
+        
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        msg.setText(
+            f"<h3>amdtr — Another Markdown Editor</h3>"
+            f"<p>Version {self._version}</p>"
+            f"<p>A professional Markdown editor with Mermaid, KaTeX, and live preview.</p>"
+            f"<p>© 2026 amdtr contributors</p>"
+        )
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
 
     def _apply_theme(self, theme: Theme) -> None:
         """Applies the theme to the main window and all sub-components."""
@@ -339,6 +362,12 @@ class MainWindow(QMainWindow):
             act_theme = QAction(theme_name, self)
             act_theme.triggered.connect(lambda checked, name=theme_name: self._theme_manager.set_active_theme(name))
             theme_menu.addAction(act_theme)
+
+        # ── Help ──────────────────────────────────────────────────────
+        help_menu = mb.addMenu("&Help")
+        act_about = QAction("&About amdtr", self)
+        act_about.triggered.connect(self._on_about)
+        help_menu.addAction(act_about)
 
         # --- Right side: Quick access buttons ---
         self._header_buttons = QWidget()

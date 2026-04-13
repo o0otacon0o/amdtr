@@ -21,6 +21,8 @@ def resource_path(relative_path: str) -> Path:
 
     return base_path / relative_path
 
+__version__ = "1.0.0"
+
 def main() -> None:
     # High-DPI-Scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -38,7 +40,7 @@ def main() -> None:
     # Fusion Style
     app.setStyle("Fusion")
 
-    window = MainWindow()
+    window = MainWindow(version=__version__)
     window.show()
 
     sys.exit(app.exec())
