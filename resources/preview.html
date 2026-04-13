@@ -225,6 +225,41 @@
                         return `<pre data-line="${line}"><code class="language-${lang || ''}">${highlighted}</code></pre>`;
                     };
 
+                    // KaTeX Extension für Marked
+                    const katexExtension = {
+                        extensions: [
+                            {
+                                name: 'inlineMath',
+                                level: 'inline',
+                                start(src) { return src.indexOf('$'); },
+                                tokenizer(src, tokens) {
+                                    const match = src.match(/^\$((?!\s)[^$\n]+?(?!\s))\$/);
+                                    if (match) {
+                                        return { type: 'inlineMath', raw: match[0], text: match[1] };
+                                    }
+                                },
+                                renderer(token) {
+                                    return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
+                                }
+                            },
+                            {
+                                name: 'blockMath',
+                                level: 'block',
+                                start(src) { return src.indexOf('$'); },
+                                tokenizer(src, tokens) {
+                                    const match = src.match(/^\$\$([\s\S]+?)\$\$/);
+                                    if (match) {
+                                        return { type: 'blockMath', raw: match[0], text: match[1] };
+                                    }
+                                },
+                                renderer(token) {
+                                    return `<div class="katex-display">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</div>`;
+                                }
+                            }
+                        ]
+                    };
+
+                    marked.use(katexExtension);
                     marked.setOptions({
                         renderer: renderer,
                         breaks: true,
@@ -279,31 +314,27 @@
                     console.log('- marked:', typeof marked !== 'undefined');
                     console.log('- mermaid:', typeof mermaid !== 'undefined');
                     console.log('- hljs:', typeof hljs !== 'undefined');
-                    console.log('- renderMathInElement:', typeof renderMathInElement !== 'undefined');
+                    console.log('- katex:', typeof katex !== 'undefined');
                     
-                    // 1. Math-Preprocessing
-                    const processedMd = this.preprocessMath(markdown);
-                    console.log('Processed markdown length:', processedMd.length);
-                    
-                    // 2. Markdown → HTML
+                    // 1. Markdown → HTML
                     let html = '';
                     if (typeof marked !== 'undefined') {
                         console.log('Using marked.js for parsing');
-                        html = marked.parse(processedMd);
+                        html = marked.parse(markdown);
                         console.log('HTML output length:', html.length);
                     } else {
                         console.error('marked.js not available! Using fallback');
                         html = `<pre class="fallback">${this.escapeHtml(markdown)}</pre>`;
                     }
                     
-                    // 3. Line-Mapping für Scroll-Sync
+                    // 2. Line-Mapping für Scroll-Sync
                     html = this.addLineMapping(html);
                     
-                    // 4. DOM Update
+                    // 3. DOM Update
                     this.content.innerHTML = html;
                     console.log('DOM updated with HTML');
                     
-                    // 5. Post-Processing
+                    // 4. Post-Processing
                     await this.postProcess();
                     
                     console.log('Preview updated successfully');
@@ -321,13 +352,6 @@
                 const md = this.currentMarkdown;
                 this.currentMarkdown = ''; // Cache invalidieren
                 await this.updateContent(md);
-            }
-            
-            preprocessMath(markdown) {
-                // Einfacher Math-Schutz vor Marked.js
-                return markdown
-                    .replace(/\$\$(.*?)\$\$/gs, '<div class="math-display">$$1$$</div>')
-                    .replace(/\$([^$\n]+?)\$/g, '<span class="math-inline">$1</span>');
             }
             
             addLineMapping(html) {
@@ -362,17 +386,7 @@
                     hljs.highlightAll();
                 }
                 
-                // 2. KaTeX Math-Rendering
-                if (typeof renderMathInElement !== 'undefined') {
-                    renderMathInElement(this.content, {
-                        delimiters: [
-                            { left: "$$", right: "$$", display: true },
-                            { left: "$", right: "$", display: false }
-                        ]
-                    });
-                }
-                
-                // 3. Mermaid-Diagramme
+                // 2. Mermaid-Diagramme
                 await this.renderMermaid();
             }
             
