@@ -133,8 +133,16 @@
         
         /* Math-Rendering */
         .katex-display {
-            margin: 1em 0;
+            display: inline-block;
+            margin: 0.2em 0;
+        }
+        
+        /* Centering only for standalone math blocks */
+        p > .katex-display:only-child,
+        div > .katex-display:only-child {
+            display: block;
             text-align: center;
+            margin: 0.8em 0;
         }
         
         /* Line-Referenzen für Scroll-Sync */
