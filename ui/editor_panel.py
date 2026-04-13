@@ -32,8 +32,15 @@ class VimController:
     def __init__(self, editor: QsciScintilla):
         self.editor = editor
         self.mode = self.MODE_NORMAL
-        self._pending_op = None
+        self._pending_op = ""
         
+    def get_status(self) -> str:
+        """Returns the status string for the UI."""
+        status = self.mode
+        if self._pending_op:
+            status += f" {self._pending_op}"
+        return status
+
     def handle_key(self, event) -> bool:
         """
         Handles key events. 
@@ -45,6 +52,7 @@ class VimController:
         if self.mode == self.MODE_INSERT:
             if key == Qt.Key.Key_Escape:
                 self.mode = self.MODE_NORMAL
+                self._pending_op = ""
                 self.editor.setCaretWidth(10) # Simulates block cursor
                 return True
             return False # Let editor handle typing
@@ -52,6 +60,7 @@ class VimController:
         # --- NORMAL MODE ---
         if key == Qt.Key.Key_I:
             self.mode = self.MODE_INSERT
+            self._pending_op = ""
             self.editor.setCaretWidth(1) # Normal line cursor
             return True
             
@@ -68,22 +77,24 @@ class VimController:
         
         if key in nav_map:
             self.editor.SendScintilla(nav_map[key])
+            self._pending_op = ""
             return True
             
         if text == "$":
             self.editor.SendScintilla(QsciScintilla.SCI_LINEEND)
+            self._pending_op = ""
             return True
             
         # Double-key commands (e.g., dd)
         if text == "d":
             if self._pending_op == "d":
                 self.editor.SendScintilla(QsciScintilla.SCI_LINEDELETE)
-                self._pending_op = None
+                self._pending_op = ""
             else:
                 self._pending_op = "d"
             return True
         
-        self._pending_op = None
+        self._pending_op = ""
         return True # Consume all other keys in Normal mode
 
 
@@ -104,6 +115,7 @@ class EditorPanel(QWidget):
     cursor_position_changed = pyqtSignal(int, int)  # line, column
     scroll_changed = pyqtSignal(int)               # First visible line
     wikilink_requested = pyqtSignal(Path)  # User wants to open a wikilink
+    vim_status_changed = pyqtSignal(str)   # Mode + pending keys
     
     def __init__(self, file_path: Path, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -130,7 +142,10 @@ class EditorPanel(QWidget):
     def eventFilter(self, obj, event) -> bool:
         if obj == self._editor and event.type() == event.Type.KeyPress:
             if self._vim_mode:
-                return self._vim_controller.handle_key(event)
+                consumed = self._vim_controller.handle_key(event)
+                if consumed:
+                    self.vim_status_changed.emit(self._vim_controller.get_status())
+                return consumed
         return super().eventFilter(obj, event)
 
     def set_vim_mode(self, enabled: bool) -> None:
@@ -141,8 +156,10 @@ class EditorPanel(QWidget):
         if enabled:
             self._editor.setCaretWidth(10) # Simulates block cursor
             self._vim_controller.mode = VimController.MODE_NORMAL
+            self.vim_status_changed.emit(self._vim_controller.get_status())
         else:
             self._editor.setCaretWidth(1) # Normal line cursor
+            self.vim_status_changed.emit("")
         
         self._editor.setFocus()
         

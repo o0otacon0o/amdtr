@@ -77,10 +77,10 @@ class MainWindow(QMainWindow):
         
         self._restore_session()
 
-    def _update_vim_status(self, enabled: bool) -> None:
+    def _update_vim_status(self, status_text: str) -> None:
         """Updates the status bar label for Vim mode."""
         if hasattr(self, '_lbl_vim'):
-            self._lbl_vim.setText("VIM" if enabled else "")
+            self._lbl_vim.setText(status_text if status_text else "")
 
     def _on_about(self) -> None:
         """Shows the about dialog."""
@@ -509,6 +509,7 @@ class MainWindow(QMainWindow):
 
         # Tab widget informs when dirty state changes
         self._tabs.dirty_state_changed.connect(self._on_dirty_state_changed)
+        self._tabs.vim_status_changed.connect(self._update_vim_status)
 
         # Command Palette signals
         self._command_palette.file_requested.connect(self._tabs.open_file)

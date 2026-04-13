@@ -69,6 +69,7 @@ class TabWidget(QTabWidget):
 
     active_file_changed = pyqtSignal(object)  # Path | None
     dirty_state_changed = pyqtSignal()
+    vim_status_changed = pyqtSignal(str)   # Mode + pending keys
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -147,6 +148,9 @@ class TabWidget(QTabWidget):
         
         # Connect wikilink navigation signal
         editor.wikilink_requested.connect(self.open_file)
+        
+        # Connect vim status signal
+        editor.vim_status_changed.connect(self.vim_status_changed.emit)
 
         idx = self.addTab(editor, path.name)
         self.setTabToolTip(idx, str(path))

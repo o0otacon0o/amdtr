@@ -79,6 +79,7 @@ class EditorPreviewSplit(QWidget):
     dirty_state_changed = pyqtSignal(bool)
     content_changed = pyqtSignal(str)  # New signal for preview updates
     wikilink_requested = pyqtSignal(Path)  # Wikilink navigation requested
+    vim_status_changed = pyqtSignal(str)   # Mode + pending keys
     
     def __init__(self, file_path: Path, parent=None):
         super().__init__(parent)
@@ -169,6 +170,7 @@ class EditorPreviewSplit(QWidget):
         # Forward EditorPanel signals
         self._editor.dirty_state_changed.connect(self.dirty_state_changed.emit)
         self._editor.wikilink_requested.connect(self.wikilink_requested.emit)
+        self._editor.vim_status_changed.connect(self.vim_status_changed.emit)
 
         # Search
         self._search_panel.search_requested.connect(self._on_search_requested)
