@@ -6,8 +6,8 @@ full-featured editor providing syntax highlighting, line numbers,
 code folding, and advanced features.
 """
 
-import difflib
 from __future__ import annotations
+import difflib
 from pathlib import Path
 from typing import Optional
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
@@ -209,8 +209,8 @@ class EditorPanel(QWidget):
         self._editor.setMarginWidth(1, 4) # Small 4px strip
         
         # Define Markers
-        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRect, MARKER_ADDED)
-        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRect, MARKER_MODIFIED)
+        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_ADDED)
+        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_MODIFIED)
         
         # Default colors (will be updated by theme)
         self._editor.setMarkerBackgroundColor(QColor("#40a040"), MARKER_ADDED)
