@@ -48,10 +48,27 @@ class EditorPanel(QWidget):
         # Wikilink resolver (set from outside)
         self._wikilink_resolver: WikilinkResolver | None = None
         
+        self._vim_mode = False
+        
         self._setup_ui()
         self._setup_editor()
         self._load_file()
         self._wire_signals()
+
+    def set_vim_mode(self, enabled: bool) -> None:
+        """Enables or disables Vim (Vi) modal editing."""
+        self._vim_mode = enabled
+        self._editor.setViMode(enabled)
+        
+        # Adjust caret width for better Vim feel
+        # 0 = block cursor (standard for Vi normal mode)
+        # 1 = line cursor
+        if enabled:
+            self._editor.setCursorWidth(0)
+        else:
+            self._editor.setCursorWidth(1)
+        
+        self._editor.setFocus()
         
     def _setup_ui(self) -> None:
         """Create UI layout."""

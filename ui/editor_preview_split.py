@@ -313,6 +313,10 @@ class EditorPreviewSplit(QWidget):
         """Sets the wikilink resolver for link navigation."""
         self._editor.set_wikilink_resolver(resolver)
     
+    def set_vim_mode(self, enabled: bool) -> None:
+        """Propagates Vim mode to the editor."""
+        self._editor.set_vim_mode(enabled)
+    
     # ── Editor Access for advanced features ───────────────────────────
     
     def editor(self) -> EditorPanel:

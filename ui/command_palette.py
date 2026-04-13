@@ -200,6 +200,11 @@ class CommandPalette(QDialog):
                 "Show/hide the file tree",
                 lambda: self.action_requested.emit("toggle_sidebar")
             ),
+            CommandItem(
+                ":> Toggle Vim Mode",
+                "Toggle experimental Vim modal editing",
+                lambda: self.action_requested.emit("toggle_vim")
+            ),
         ]
     
     def _rebuild_items(self) -> None:

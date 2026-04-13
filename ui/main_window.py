@@ -70,7 +70,17 @@ class MainWindow(QMainWindow):
         # Set initial theme
         self._apply_theme(self._theme_manager.active_theme())
         
+        # Load Vim mode from settings
+        vim_enabled = self._settings.value("editor/vim_mode", False, type=bool)
+        self._tabs.set_vim_mode(vim_enabled)
+        self._update_vim_status(vim_enabled)
+        
         self._restore_session()
+
+    def _update_vim_status(self, enabled: bool) -> None:
+        """Updates the status bar label for Vim mode."""
+        if hasattr(self, '_lbl_vim'):
+            self._lbl_vim.setText("VIM" if enabled else "")
 
     def _on_about(self) -> None:
         """Shows the about dialog."""
@@ -458,9 +468,12 @@ class MainWindow(QMainWindow):
         # addPermanentWidget(w):   right-aligned, never displaced
         self._lbl_workspace = QLabel("No workspace open")
         self._lbl_cursor = QLabel("")
+        self._lbl_vim = QLabel("")
+        self._lbl_vim.setStyleSheet("font-weight: bold; color: #888; margin-right: 10px;")
 
         sb = self.statusBar()
         sb.addWidget(self._lbl_workspace, 1)
+        sb.addPermanentWidget(self._lbl_vim)
         sb.addPermanentWidget(self._lbl_cursor)
 
     def _build_command_palette(self) -> None:
@@ -658,6 +671,16 @@ class MainWindow(QMainWindow):
             self._on_save_all()
         elif action_name == "toggle_sidebar":
             self._on_toggle_sidebar()
+        elif action_name == "toggle_vim":
+            self._on_toggle_vim_mode()
+
+    def _on_toggle_vim_mode(self) -> None:
+        """Toggles Vim modal editing and saves the preference."""
+        enabled = not self._settings.value("editor/vim_mode", False, type=bool)
+        self._settings.setValue("editor/vim_mode", enabled)
+        self._tabs.set_vim_mode(enabled)
+        self._update_vim_status(enabled)
+        self.statusBar().showMessage(f"Vim Mode {'Enabled' if enabled else 'Disabled'}", 3000)
 
     def _on_export_html(self) -> None:
         """Exports the current file as HTML."""
