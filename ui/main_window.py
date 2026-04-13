@@ -73,7 +73,8 @@ class MainWindow(QMainWindow):
         # Load Vim mode from settings
         vim_enabled = self._settings.value("editor/vim_mode", False, type=bool)
         self._tabs.set_vim_mode(vim_enabled)
-        self._update_vim_status(vim_enabled)
+        # Pass empty string if disabled, or "NORMAL" if enabled
+        self._update_vim_status("NORMAL" if vim_enabled else "")
         
         self._restore_session()
 
