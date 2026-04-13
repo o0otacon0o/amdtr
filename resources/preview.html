@@ -229,31 +229,32 @@
                     const katexExtension = {
                         extensions: [
                             {
-                                name: 'inlineMath',
-                                level: 'inline',
-                                start(src) { return src.indexOf('$'); },
-                                tokenizer(src, tokens) {
-                                    const match = src.match(/^\$((?!\s)[^$\n]+?(?!\s))\$/);
-                                    if (match) {
-                                        return { type: 'inlineMath', raw: match[0], text: match[1] };
-                                    }
-                                },
-                                renderer(token) {
-                                    return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
-                                }
-                            },
-                            {
                                 name: 'blockMath',
-                                level: 'block',
+                                level: 'inline', // 'inline' allow usage inside paragraphs/tables
                                 start(src) { return src.indexOf('$'); },
                                 tokenizer(src, tokens) {
                                     const match = src.match(/^\$\$([\s\S]+?)\$\$/);
                                     if (match) {
-                                        return { type: 'blockMath', raw: match[0], text: match[1] };
+                                        return { type: 'blockMath', raw: match[0], text: match[1].trim() };
                                     }
                                 },
                                 renderer(token) {
                                     return `<div class="katex-display">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</div>`;
+                                }
+                            },
+                            {
+                                name: 'inlineMath',
+                                level: 'inline',
+                                start(src) { return src.indexOf('$'); },
+                                tokenizer(src, tokens) {
+                                    // Match $...$ but not $$...$$
+                                    const match = src.match(/^\$((?:[^\$\n]|\\\$)+?)\$/);
+                                    if (match) {
+                                        return { type: 'inlineMath', raw: match[0], text: match[1].trim() };
+                                    }
+                                },
+                                renderer(token) {
+                                    return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
                                 }
                             }
                         ]
