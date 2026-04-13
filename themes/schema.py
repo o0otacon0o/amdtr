@@ -40,6 +40,7 @@ class EditorTheme:
     current_line: str
     marker_added: str
     marker_modified: str
+    marker_deleted: str
     tokens: Dict[str, TokenStyle]
     
     @classmethod
@@ -59,6 +60,7 @@ class EditorTheme:
             current_line=data.get("current_line", "#f6f8fa"),
             marker_added=data.get("marker_added", "#40a040"),
             marker_modified=data.get("marker_modified", "#a0a040"),
+            marker_deleted=data.get("marker_deleted", "#cf222e"),
             tokens=tokens
         )
 

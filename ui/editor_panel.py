@@ -24,6 +24,7 @@ from themes.schema import EditorTheme
 # Marker IDs for change indicators
 MARKER_ADDED = 10
 MARKER_MODIFIED = 11
+MARKER_DELETED = 12
 
 
 class VimController:
@@ -211,10 +212,12 @@ class EditorPanel(QWidget):
         # Define Markers
         self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_ADDED)
         self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_MODIFIED)
+        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_DELETED)
         
         # Default colors (will be updated by theme)
         self._editor.setMarkerBackgroundColor(QColor("#40a040"), MARKER_ADDED)
         self._editor.setMarkerBackgroundColor(QColor("#a0a040"), MARKER_MODIFIED)
+        self._editor.setMarkerBackgroundColor(QColor("#cf222e"), MARKER_DELETED)
         
         # Code folding
         self._editor.setFolding(QsciScintilla.FoldStyle.BoxedTreeFoldStyle)
@@ -277,6 +280,7 @@ class EditorPanel(QWidget):
         # Change Indicators
         self._editor.setMarkerBackgroundColor(QColor(theme.marker_added), MARKER_ADDED)
         self._editor.setMarkerBackgroundColor(QColor(theme.marker_modified), MARKER_MODIFIED)
+        self._editor.setMarkerBackgroundColor(QColor(theme.marker_deleted), MARKER_DELETED)
         
         # Refresh
         self._update_line_number_width()
@@ -466,6 +470,7 @@ class EditorPanel(QWidget):
         # 1. Clear existing markers
         self._editor.markerDeleteAll(MARKER_ADDED)
         self._editor.markerDeleteAll(MARKER_MODIFIED)
+        self._editor.markerDeleteAll(MARKER_DELETED)
         
         # 2. Get lines
         base_lines = self._base_text.splitlines()
@@ -477,6 +482,14 @@ class EditorPanel(QWidget):
             if tag == 'equal':
                 continue
                 
+            if tag == 'delete':
+                # Line was deleted at position j1
+                # Put marker on the line where the deletion occurred
+                marker_line = min(j1, len(current_lines) - 1)
+                if marker_line >= 0:
+                    self._editor.markerAdd(marker_line, MARKER_DELETED)
+                continue
+
             marker = MARKER_MODIFIED if tag == 'replace' else MARKER_ADDED
             
             # Add markers to current lines (j1 to j2)

@@ -11,6 +11,7 @@
         "current_line": "#f6f8fa",
         "marker_added": "#2da44e",
         "marker_modified": "#bf8700",
+        "marker_deleted": "#cf222e",
         "tokens": {
             "DEFAULT": { "color": "#24292f" },
             "HEADING_1": { "color": "#0969da", "bold": true },
