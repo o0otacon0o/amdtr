@@ -233,36 +233,34 @@
                         return `<pre data-line="${line}"><code class="language-${lang || ''}">${highlighted}</code></pre>`;
                     };
 
-                    // KaTeX Extension für Marked
+                    // KaTeX Extension für Marked (Consolidated for better priority handling)
                     const katexExtension = {
                         extensions: [
                             {
-                                name: 'blockMath',
-                                level: 'inline', 
-                                start(src) { return src.indexOf('$$'); },
-                                tokenizer(src, tokens) {
-                                    const match = src.match(/^\$\$([\s\S]+?)\$\$/);
-                                    if (match) {
-                                        return { type: 'blockMath', raw: match[0], text: match[1].trim() };
-                                    }
-                                },
-                                renderer(token) {
-                                    return `<span class="katex-display" style="display: block; text-align: center; margin: 0.5em 0;">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</span>`;
-                                }
-                            },
-                            {
-                                name: 'inlineMath',
+                                name: 'math',
                                 level: 'inline',
                                 start(src) { return src.indexOf('$'); },
                                 tokenizer(src, tokens) {
-                                    // Match $...$ but not $$...$$
-                                    const match = src.match(/^\$((?:[^\$\n]|\\\$)+?)\$/);
-                                    if (match) {
-                                        return { type: 'inlineMath', raw: match[0], text: match[1].trim() };
+                                    // 1. Block Math ($$ ... $$)
+                                    const blockMatch = src.match(/^\$\$([\s\S]+?)\$\$/);
+                                    if (blockMatch) {
+                                        return { type: 'math', raw: blockMatch[0], text: blockMatch[1].trim(), display: true };
+                                    }
+                                    // 2. Inline Math ($ ... $)
+                                    const inlineMatch = src.match(/^\$((?:[^\$\n]|\\\$)+?)\$/);
+                                    if (inlineMatch) {
+                                        return { type: 'math', raw: inlineMatch[0], text: inlineMatch[1].trim(), display: false };
                                     }
                                 },
                                 renderer(token) {
-                                    return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
+                                    const html = katex.renderToString(token.text, { 
+                                        displayMode: token.display, 
+                                        throwOnError: false 
+                                    });
+                                    if (token.display) {
+                                        return `<span class="katex-display-wrapper">${html}</span>`;
+                                    }
+                                    return html;
                                 }
                             }
                         ]
@@ -271,7 +269,7 @@
                     marked.use(katexExtension);
                     marked.setOptions({
                         renderer: renderer,
-                        breaks: false, // Standard Markdown behavior (single newline = space)
+                        breaks: false, 
                         gfm: true
                     });
                 }
