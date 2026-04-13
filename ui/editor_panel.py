@@ -7,6 +7,7 @@ code folding, and advanced features.
 """
 
 from __future__ import annotations
+import difflib
 from pathlib import Path
 from typing import Optional
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
@@ -18,6 +19,12 @@ from core.file_manager import FileManager
 from core.wikilink_resolver import WikilinkResolver
 from editor.md_mermaid_lexer import MdMermaidLexer
 from themes.schema import EditorTheme
+
+
+# Marker IDs for change indicators
+MARKER_ADDED = 10
+MARKER_MODIFIED = 11
+MARKER_DELETED = 12
 
 
 class VimController:
@@ -129,6 +136,13 @@ class EditorPanel(QWidget):
         
         self._vim_mode = False
         
+        # Change Tracking
+        self._base_text = ""
+        self._change_timer = QTimer(self)
+        self._change_timer.setSingleShot(True)
+        self._change_timer.setInterval(250) # Update after 250ms of inactivity
+        self._change_timer.timeout.connect(self._update_change_indicators)
+        
         self._setup_ui()
         self._setup_editor()
         
@@ -190,8 +204,20 @@ class EditorPanel(QWidget):
         self._editor.setMarginLineNumbers(0, True)
         self._editor.setMarginSensitivity(0, False)
         
-        # Disable other margins (remove symbol margin 1)
-        self._editor.setMarginWidth(1, 0)
+        # Change Indicators Margin
+        self._editor.setMarginType(1, QsciScintilla.MarginType.SymbolMargin)
+        self._editor.setMarginSensitivity(1, False)
+        self._editor.setMarginWidth(1, 4) # Small 4px strip
+        
+        # Define Markers
+        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_ADDED)
+        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_MODIFIED)
+        self._editor.markerDefine(QsciScintilla.MarkerSymbol.FullRectangle, MARKER_DELETED)
+        
+        # Default colors (will be updated by theme)
+        self._editor.setMarkerBackgroundColor(QColor("#40a040"), MARKER_ADDED)
+        self._editor.setMarkerBackgroundColor(QColor("#a0a040"), MARKER_MODIFIED)
+        self._editor.setMarkerBackgroundColor(QColor("#cf222e"), MARKER_DELETED)
         
         # Code folding
         self._editor.setFolding(QsciScintilla.FoldStyle.BoxedTreeFoldStyle)
@@ -250,6 +276,11 @@ class EditorPanel(QWidget):
         self._editor.setCaretLineBackgroundColor(QColor(theme.current_line))
         self._editor.setSelectionBackgroundColor(QColor(theme.selection_bg))
         self._editor.setSelectionForegroundColor(QColor(theme.selection_fg))
+        
+        # Change Indicators
+        self._editor.setMarkerBackgroundColor(QColor(theme.marker_added), MARKER_ADDED)
+        self._editor.setMarkerBackgroundColor(QColor(theme.marker_modified), MARKER_MODIFIED)
+        self._editor.setMarkerBackgroundColor(QColor(theme.marker_deleted), MARKER_DELETED)
         
         # Refresh
         self._update_line_number_width()
@@ -317,12 +348,18 @@ class EditorPanel(QWidget):
             self._editor.setText(self._document.text)
             self._editor.blockSignals(False)
             
+            # Reset change tracking
+            self._base_text = self._document.text
+            self._editor.markerDeleteAll(MARKER_ADDED)
+            self._editor.markerDeleteAll(MARKER_MODIFIED)
+            
             # Restore cursor position
             line, col = self._document.get_cursor_position()
             self._editor.setCursorPosition(line, col)
         else:
             # New or unreadable file
             self._editor.setText("")
+            self._base_text = ""
     
     # ── Public Interface ──────────────────────────────────────────────
     
@@ -351,7 +388,12 @@ class EditorPanel(QWidget):
         # Save to disk
         success = self._document.save_to_disk()
         
-        if not success:
+        if success:
+            # Reset change tracking on successful save
+            self._base_text = self._document.text
+            self._editor.markerDeleteAll(MARKER_ADDED)
+            self._editor.markerDeleteAll(MARKER_MODIFIED)
+        else:
             QMessageBox.critical(
                 self, "Save Error",
                 f"Could not save {self._document.path.name}"
@@ -420,6 +462,40 @@ class EditorPanel(QWidget):
             # Backward search
             return self._editor.findFirst(text, re, cs, wo, wrap, forward)
 
+    def _update_change_indicators(self) -> None:
+        """Calculates diff since last save and updates gutter markers."""
+        if self._base_text is None:
+            return
+            
+        # 1. Clear existing markers
+        self._editor.markerDeleteAll(MARKER_ADDED)
+        self._editor.markerDeleteAll(MARKER_MODIFIED)
+        self._editor.markerDeleteAll(MARKER_DELETED)
+        
+        # 2. Get lines
+        base_lines = self._base_text.splitlines()
+        current_lines = self._editor.text().splitlines()
+        
+        # 3. Calculate Diff
+        s = difflib.SequenceMatcher(None, base_lines, current_lines)
+        for tag, i1, i2, j1, j2 in s.get_opcodes():
+            if tag == 'equal':
+                continue
+                
+            if tag == 'delete':
+                # Line was deleted at position j1
+                # Put marker on the line where the deletion occurred
+                marker_line = min(j1, len(current_lines) - 1)
+                if marker_line >= 0:
+                    self._editor.markerAdd(marker_line, MARKER_DELETED)
+                continue
+
+            marker = MARKER_MODIFIED if tag == 'replace' else MARKER_ADDED
+            
+            # Add markers to current lines (j1 to j2)
+            for line in range(j1, j2):
+                self._editor.markerAdd(line, marker)
+
     # ── Slots ─────────────────────────────────────────────────────────
     
     def _on_text_changed(self) -> None:
@@ -428,6 +504,9 @@ class EditorPanel(QWidget):
         current_text = self._editor.text()
         if self._document.text != current_text:
             self._document.text = current_text
+        
+        # Start/Restart change tracker timer
+        self._change_timer.start()
         
         # Forward signal
         self.text_changed.emit()
