@@ -1,4 +1,4 @@
-# amdtr (Another Markdown Editor)
+# amdtr (Another Markdown Editor) v1.0.0
 
 ![amdtr Logo](amdtr-logo.png)
 
@@ -13,8 +13,10 @@
 ## 🚀 Key Features
 
 *   **⚡ High-Speed Live Preview:** Real-time rendering (150ms debounced) of Markdown, Mermaid diagrams, KaTeX math, and syntax-highlighted code blocks.
+*   **💨 Streamlined Workspace:** Incremental batch indexing (FTS5) for lightning-fast loading of large folders. Only changed files are re-indexed based on their modification time.
 *   **🛠️ Unified Header Bar:** A streamlined UI that merges menu and toolbar into a single, space-saving element for maximum focus.
-*   **📂 Smart Workspace:** Integrated sidebar with file management (Rename/Delete), Wikilink support, and workspace-wide FTS5 full-text search.
+*   **📂 Clean Projects:** No hidden `.amdtr` folders in your Markdown collections. All metadata (search index, session, and local configuration) is stored centrally in platform-standard application data folders.
+*   **📂 Smart Management:** Integrated sidebar with file management (Rename/Delete), Wikilink support, and workspace-wide full-text search.
 *   **📑 Document Outline:** Automatic Table of Contents (ToC) generation from Markdown headings for lightning-fast navigation.
 *   **🎨 Custom Themes:** Fully skinnable UI and editor (JSON-based themes like One Dark or GitHub Light).
 *   **📦 Portable Export:** One-click standalone HTML export with all assets (JS/CSS/Fonts) embedded for offline viewing.
