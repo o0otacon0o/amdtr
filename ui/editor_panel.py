@@ -45,14 +45,14 @@ class VimController:
         if self.mode == self.MODE_INSERT:
             if key == Qt.Key.Key_Escape:
                 self.mode = self.MODE_NORMAL
-                self.editor.setCursorWidth(0)
+                self.editor.setCaretStyle(QsciScintilla.CaretStyle.Block)
                 return True
             return False # Let editor handle typing
             
         # --- NORMAL MODE ---
         if key == Qt.Key.Key_I:
             self.mode = self.MODE_INSERT
-            self.editor.setCursorWidth(1)
+            self.editor.setCaretStyle(QsciScintilla.CaretStyle.Line)
             return True
             
         # Basic Navigation
@@ -137,12 +137,12 @@ class EditorPanel(QWidget):
         """Enables or disables Vim (Vi) modal editing."""
         self._vim_mode = enabled
         
-        # Adjust caret width for better Vim feel
+        # Adjust caret style for better Vim feel
         if enabled:
-            self._editor.setCursorWidth(0)
+            self._editor.setCaretStyle(QsciScintilla.CaretStyle.Block)
             self._vim_controller.mode = VimController.MODE_NORMAL
         else:
-            self._editor.setCursorWidth(1)
+            self._editor.setCaretStyle(QsciScintilla.CaretStyle.Line)
         
         self._editor.setFocus()
         
