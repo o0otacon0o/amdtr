@@ -45,14 +45,14 @@ class VimController:
         if self.mode == self.MODE_INSERT:
             if key == Qt.Key.Key_Escape:
                 self.mode = self.MODE_NORMAL
-                self.editor.setCaretStyle(QsciScintilla.CaretStyle.Block)
+                self.editor.setCaretWidth(10) # Simulates block cursor
                 return True
             return False # Let editor handle typing
             
         # --- NORMAL MODE ---
         if key == Qt.Key.Key_I:
             self.mode = self.MODE_INSERT
-            self.editor.setCaretStyle(QsciScintilla.CaretStyle.Line)
+            self.editor.setCaretWidth(1) # Normal line cursor
             return True
             
         # Basic Navigation
@@ -139,10 +139,10 @@ class EditorPanel(QWidget):
         
         # Adjust caret style for better Vim feel
         if enabled:
-            self._editor.setCaretStyle(QsciScintilla.CaretStyle.Block)
+            self._editor.setCaretWidth(10) # Simulates block cursor
             self._vim_controller.mode = VimController.MODE_NORMAL
         else:
-            self._editor.setCaretStyle(QsciScintilla.CaretStyle.Line)
+            self._editor.setCaretWidth(1) # Normal line cursor
         
         self._editor.setFocus()
         
