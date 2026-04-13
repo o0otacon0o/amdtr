@@ -69,6 +69,7 @@ class TabWidget(QTabWidget):
 
     active_file_changed = pyqtSignal(object)  # Path | None
     dirty_state_changed = pyqtSignal()
+    vim_status_changed = pyqtSignal(str)   # Mode + pending keys
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -86,6 +87,9 @@ class TabWidget(QTabWidget):
         
         # Theme system
         self._current_theme: Theme | None = None
+        
+        # Vim mode
+        self._vim_mode = False
 
         # Welcome screen as initial content
         self._welcome = WelcomeWidget()
@@ -106,6 +110,14 @@ class TabWidget(QTabWidget):
             if isinstance(widget, EditorPreviewSplit):
                 widget.set_theme(theme)
 
+    def set_vim_mode(self, enabled: bool) -> None:
+        """Enables or disables Vim mode in all open editors."""
+        self._vim_mode = enabled
+        for i in range(self.count()):
+            widget = self.widget(i)
+            if isinstance(widget, EditorPreviewSplit):
+                widget.set_vim_mode(enabled)
+
     def open_file(self, path: Path) -> None:
         """Opens a file or switches to it if already open."""
         path = path.resolve()
@@ -116,6 +128,10 @@ class TabWidget(QTabWidget):
             return
 
         editor = EditorPreviewSplit(path)
+
+        # Apply current settings to new editor
+        if self._vim_mode:
+            editor.set_vim_mode(True)
 
         # Connect wikilink resolver with editor
         if self._wikilink_resolver:
@@ -132,6 +148,9 @@ class TabWidget(QTabWidget):
         
         # Connect wikilink navigation signal
         editor.wikilink_requested.connect(self.open_file)
+        
+        # Connect vim status signal
+        editor.vim_status_changed.connect(self.vim_status_changed.emit)
 
         idx = self.addTab(editor, path.name)
         self.setTabToolTip(idx, str(path))

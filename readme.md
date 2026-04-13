@@ -19,8 +19,30 @@
 *   **📂 Smart Management:** Integrated sidebar with file management (Rename/Delete), Wikilink support, and workspace-wide full-text search.
 *   **📑 Document Outline:** Automatic Table of Contents (ToC) generation from Markdown headings for lightning-fast navigation.
 *   **🎨 Custom Themes:** Fully skinnable UI and editor (JSON-based themes like One Dark or GitHub Light).
+*   **⌨️ Experimental Vim Mode:** Opt-in modal editing for power users (navigation, basic editing, and mode visualization).
 *   **📦 Portable Export:** One-click standalone HTML export with all assets (JS/CSS/Fonts) embedded for offline viewing.
 *   **🔗 Scroll Sync:** Optional bi-directional scrolling between editor and preview.
+
+## ⌨️ Experimental Vim Mode (Opt-In)
+
+**amdtr** includes a lightweight, experimental Vim state machine. This feature is disabled by default.
+
+### Activation
+Open the **Command Palette** (`Ctrl+P`) and type `:> Toggle Vim Mode`.
+
+### Supported Commands (Normal Mode)
+| Key | Action |
+| :--- | :--- |
+| `h` / `j` / `k` / `l` | Move cursor Left / Down / Up / Right |
+| `i` | Enter **Insert Mode** (Standard typing) |
+| `Esc` | Return to **Normal Mode** |
+| `x` | Delete character under cursor |
+| `0` (Zero) | Jump to start of line |
+| `$` | Jump to end of line |
+| `dd` | Delete current line |
+| `u` | Undo last action |
+
+The current mode and pending commands (like `dd`) are displayed in the status bar.
 
 ## 🛠️ Getting Started (Windows)
 
