@@ -2,6 +2,7 @@
 amdtr — Another Markdown Editor.
 """
 
+import os
 import sys
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication
@@ -10,6 +11,15 @@ from PyQt6.QtGui import QIcon
 
 from ui.main_window import MainWindow
 
+def resource_path(relative_path: str) -> Path:
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS)
+    except Exception:
+        base_path = Path(__file__).parent
+
+    return base_path / relative_path
 
 def main() -> None:
     # High-DPI-Scaling
@@ -20,12 +30,11 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("amdtr")
     app.setOrganizationName("amdtr")
-    
+
     # Set icon
-    icon_path = Path(__file__).parent / "amdtr-icon.png"
+    icon_path = resource_path("amdtr-icon.png")
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
-
     # Fusion Style
     app.setStyle("Fusion")
 

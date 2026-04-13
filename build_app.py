@@ -35,13 +35,15 @@ def build():
     datas = [
         (f"resources{os.sep}*", "resources"),
         (f"themes{os.sep}*.json", "themes"),
+        ("amdtr-icon.png", "."),
+        ("amdtr-logo.png", "."),
     ]
     
     # Arguments for PyInstaller
     args = [
         'main.py',                    # Entry point
         '--name=amdtr',               # App-Name
-        '--icon=amdtr-ico.png',       # Icon-File
+        '--icon=amdtr-icon.png',       # Icon-File
         '--onefile',                  # Single EXE
         '--windowed',                 # No console
         '--clean',                    # Clear cache
