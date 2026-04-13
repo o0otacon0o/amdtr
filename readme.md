@@ -20,6 +20,7 @@
 *   **📑 Document Outline:** Automatic Table of Contents (ToC) generation from Markdown headings for lightning-fast navigation.
 *   **🎨 Custom Themes:** Fully skinnable UI and editor (JSON-based themes like One Dark or GitHub Light).
 *   **⌨️ Experimental Vim Mode:** Opt-in modal editing for power users (navigation, basic editing, and mode visualization).
+*   **📍 Change Indicators:** Real-time gutter markers highlighting added, modified, and deleted lines since the last save.
 *   **📦 Portable Export:** One-click standalone HTML export with all assets (JS/CSS/Fonts) embedded for offline viewing.
 *   **🔗 Scroll Sync:** Optional bi-directional scrolling between editor and preview.
 
