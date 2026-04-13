@@ -133,8 +133,16 @@
         
         /* Math-Rendering */
         .katex-display {
-            margin: 1em 0;
+            display: inline-block;
+            margin: 0.2em 0;
+        }
+        
+        /* Centering only for standalone math blocks */
+        p > .katex-display:only-child,
+        div > .katex-display:only-child {
+            display: block;
             text-align: center;
+            margin: 0.8em 0;
         }
         
         /* Line-Referenzen für Scroll-Sync */
@@ -225,9 +233,43 @@
                         return `<pre data-line="${line}"><code class="language-${lang || ''}">${highlighted}</code></pre>`;
                     };
 
+                    // KaTeX Extension für Marked (Consolidated for better priority handling)
+                    const katexExtension = {
+                        extensions: [
+                            {
+                                name: 'math',
+                                level: 'inline',
+                                start(src) { return src.indexOf('$'); },
+                                tokenizer(src, tokens) {
+                                    // 1. Block Math ($$ ... $$)
+                                    const blockMatch = src.match(/^\$\$([\s\S]+?)\$\$/);
+                                    if (blockMatch) {
+                                        return { type: 'math', raw: blockMatch[0], text: blockMatch[1].trim(), display: true };
+                                    }
+                                    // 2. Inline Math ($ ... $)
+                                    const inlineMatch = src.match(/^\$((?:[^\$\n]|\\\$)+?)\$/);
+                                    if (inlineMatch) {
+                                        return { type: 'math', raw: inlineMatch[0], text: inlineMatch[1].trim(), display: false };
+                                    }
+                                },
+                                renderer(token) {
+                                    const html = katex.renderToString(token.text, { 
+                                        displayMode: token.display, 
+                                        throwOnError: false 
+                                    });
+                                    if (token.display) {
+                                        return `<span class="katex-display-wrapper">${html}</span>`;
+                                    }
+                                    return html;
+                                }
+                            }
+                        ]
+                    };
+
+                    marked.use(katexExtension);
                     marked.setOptions({
                         renderer: renderer,
-                        breaks: true,
+                        breaks: false, 
                         gfm: true
                     });
                 }
@@ -279,31 +321,27 @@
                     console.log('- marked:', typeof marked !== 'undefined');
                     console.log('- mermaid:', typeof mermaid !== 'undefined');
                     console.log('- hljs:', typeof hljs !== 'undefined');
-                    console.log('- renderMathInElement:', typeof renderMathInElement !== 'undefined');
+                    console.log('- katex:', typeof katex !== 'undefined');
                     
-                    // 1. Math-Preprocessing
-                    const processedMd = this.preprocessMath(markdown);
-                    console.log('Processed markdown length:', processedMd.length);
-                    
-                    // 2. Markdown → HTML
+                    // 1. Markdown → HTML
                     let html = '';
                     if (typeof marked !== 'undefined') {
                         console.log('Using marked.js for parsing');
-                        html = marked.parse(processedMd);
+                        html = marked.parse(markdown);
                         console.log('HTML output length:', html.length);
                     } else {
                         console.error('marked.js not available! Using fallback');
                         html = `<pre class="fallback">${this.escapeHtml(markdown)}</pre>`;
                     }
                     
-                    // 3. Line-Mapping für Scroll-Sync
+                    // 2. Line-Mapping für Scroll-Sync
                     html = this.addLineMapping(html);
                     
-                    // 4. DOM Update
+                    // 3. DOM Update
                     this.content.innerHTML = html;
                     console.log('DOM updated with HTML');
                     
-                    // 5. Post-Processing
+                    // 4. Post-Processing
                     await this.postProcess();
                     
                     console.log('Preview updated successfully');
@@ -321,13 +359,6 @@
                 const md = this.currentMarkdown;
                 this.currentMarkdown = ''; // Cache invalidieren
                 await this.updateContent(md);
-            }
-            
-            preprocessMath(markdown) {
-                // Einfacher Math-Schutz vor Marked.js
-                return markdown
-                    .replace(/\$\$(.*?)\$\$/gs, '<div class="math-display">$$1$$</div>')
-                    .replace(/\$([^$\n]+?)\$/g, '<span class="math-inline">$1</span>');
             }
             
             addLineMapping(html) {
@@ -362,17 +393,7 @@
                     hljs.highlightAll();
                 }
                 
-                // 2. KaTeX Math-Rendering
-                if (typeof renderMathInElement !== 'undefined') {
-                    renderMathInElement(this.content, {
-                        delimiters: [
-                            { left: "$$", right: "$$", display: true },
-                            { left: "$", right: "$", display: false }
-                        ]
-                    });
-                }
-                
-                // 3. Mermaid-Diagramme
+                // 2. Mermaid-Diagramme
                 await this.renderMermaid();
             }
             
