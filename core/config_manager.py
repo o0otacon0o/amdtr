@@ -139,10 +139,15 @@ class ConfigManager:
     
     def get_workspace_config_path(self, workspace_root: Path) -> Path:
         """
-        Path to the workspace-specific configuration file.
-        Located in .amdtr/config.toml
+        Path to the workspace-specific configuration file in the central data directory.
         """
-        return workspace_root / ".amdtr" / "config.toml"
+        from .workspace import Workspace
+        try:
+            ws = Workspace(workspace_root)
+            return ws.meta_dir / "config.toml"
+        except ValueError:
+            # Fallback (should not happen for valid workspace)
+            return workspace_root / ".amdtr" / "config.toml"
     
     def _load_config(self) -> AppConfig:
         """Loads configuration from QSettings."""

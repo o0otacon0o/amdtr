@@ -148,15 +148,20 @@ class SessionManager(QObject):
         return session
     
     def _get_session_file_path(self) -> Optional[Path]:
-        """Path to the session file in the workspace."""
+        """Path to the session file in the central workspace data directory."""
         if not self._current_session:
             return None
             
+        from .workspace import Workspace
         workspace_root = Path(self._current_session.workspace_root)
-        return workspace_root / '.amdtr' / 'session.json'
+        try:
+            ws = Workspace(workspace_root)
+            return ws.meta_dir / 'session.json'
+        except ValueError:
+            return None
         
     def _save_session(self) -> None:
-        """Saves session in .amdtr/session.json"""
+        """Saves session in <CentralDataDir>/workspaces/<Hash>/session.json"""
         session_file = self._get_session_file_path()
         if not session_file:
             return
