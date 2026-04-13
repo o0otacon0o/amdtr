@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
                 background-color: {theme.ui.tab_active_bg};
                 color: {theme.ui.tab_active_fg};
             }}
-        \"\"\"
+        """
         self.setStyleSheet(qss)
 
         # 2. Inform Sidebar
@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
     # ── UI Construction ───────────────────────────────────────────────
 
     def _build_central(self) -> None:
-        \"\"\"Central area with Splitter: Sidebar | Editor+Preview.\"\"\"
+        """Central area with Splitter: Sidebar | Editor+Preview."""
         from ui.sidebar import Sidebar
         from ui.tab_widget import TabWidget
         
@@ -375,7 +375,7 @@ class MainWindow(QMainWindow):
     # ── Handlers & Logic ──────────────────────────────────────────────
 
     def _load_workspace(self, path: Path) -> None:
-        \"\"\"Loads a folder as workspace.\"\"\"
+        """Loads a folder as workspace."""
         try:
             self._workspace = Workspace(path)
             self._sidebar.set_workspace(self._workspace)
@@ -388,7 +388,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, \"Error\", str(e))
 
     def _update_search_index(self) -> None:
-        \"\"\"Updates the search index in a background thread.\"\"\"
+        """Updates the search index in a background thread."""
         if not self._workspace:
             return
 
@@ -445,7 +445,7 @@ class MainWindow(QMainWindow):
             self._load_workspace(Path(path))
 
     def _on_open_file(self) -> None:
-        \"\"\"Opens a file via standard dialog.\"\"\"
+        """Opens a file via standard dialog."""
         path, _ = QFileDialog.getOpenFileName(
             self, \"Open File\", \"\", \"Markdown Files (*.md *.mmd *.txt)\"
         )
@@ -453,7 +453,7 @@ class MainWindow(QMainWindow):
             self._tabs.open_file(Path(path))
 
     def _on_new_file(self) -> None:
-        \"\"\"Creates a new file with immediate save dialog.\"\"\"
+        """Creates a new file with immediate save dialog."""
         path, _ = QFileDialog.getSaveFileName(
             self, \"New File\", \"\", \"Markdown Files (*.md)\"
         )
@@ -506,7 +506,7 @@ class MainWindow(QMainWindow):
         self._search_palette.show_palette()
 
     def _on_command_palette_action(self, action_name: str) -> None:
-        \"\"\"Executes an action from the Command Palette.\"\"\"
+        """Executes an action from the Command Palette."""
         if action_name == \"open_workspace\":
             self._on_open_workspace()
         elif action_name == \"open_file\":
@@ -519,7 +519,7 @@ class MainWindow(QMainWindow):
             self._on_toggle_vim_mode()
 
     def _on_toggle_vim_mode(self) -> None:
-        \"\"\"Toggles Vim modal editing and saves the preference.\"\"\"
+        """Toggles Vim modal editing and saves the preference."""
         enabled = not self._settings.value(\"editor/vim_mode\", False, type=bool)
         self._settings.setValue(\"editor/vim_mode\", enabled)
         self._tabs.set_vim_mode(enabled)
@@ -546,7 +546,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f\"{base} v{self._version}\")
 
     def _on_file_deleted(self, path: Path) -> None:
-        \"\"\"Called when a file has been deleted in the sidebar.\"\"\"
+        """Called when a file has been deleted in the sidebar."""
         # Check if file is open in a tab
         if path in self._tabs._open_paths:
             idx = self._tabs._open_paths[path]
@@ -580,7 +580,7 @@ class MainWindow(QMainWindow):
             self._sidebar.hide()
 
     def closeEvent(self, event) -> None:
-        \"\"\"Save session on close.\"\"\"
+        """Save session on close."""
         # Check for unsaved changes
         if self._tabs.has_dirty_tabs():
             res = QMessageBox.question(
