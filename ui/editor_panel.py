@@ -12,12 +12,79 @@ from typing import Optional
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
 from PyQt6.QtCore import pyqtSignal, Qt, QTimer
 from PyQt6.QtGui import QFont, QFontDatabase, QCursor, QColor
-from PyQt6.Qsci import QsciScintilla
+from PyQt6.Qsci import QsciScintilla, QsciCommand
 from core.document_model import DocumentModel
 from core.file_manager import FileManager
 from core.wikilink_resolver import WikilinkResolver
 from editor.md_mermaid_lexer import MdMermaidLexer
 from themes.schema import EditorTheme
+
+
+class VimController:
+    """
+    Experimental Vim state machine for QScintilla.
+    Since setViMode is not available in all PyQt6-QScintilla builds,
+    we implement a basic version manually.
+    """
+    MODE_NORMAL = "NORMAL"
+    MODE_INSERT = "INSERT"
+    
+    def __init__(self, editor: QsciScintilla):
+        self.editor = editor
+        self.mode = self.MODE_NORMAL
+        self._pending_op = None
+        
+    def handle_key(self, event) -> bool:
+        """
+        Handles key events. 
+        Returns True if the event was consumed.
+        """
+        key = event.key()
+        text = event.text()
+        
+        if self.mode == self.MODE_INSERT:
+            if key == Qt.Key.Key_Escape:
+                self.mode = self.MODE_NORMAL
+                self.editor.setCursorWidth(0)
+                return True
+            return False # Let editor handle typing
+            
+        # --- NORMAL MODE ---
+        if key == Qt.Key.Key_I:
+            self.mode = self.MODE_INSERT
+            self.editor.setCursorWidth(1)
+            return True
+            
+        # Basic Navigation
+        nav_map = {
+            Qt.Key.Key_H: QsciScintilla.SCI_CHARLEFT,
+            Qt.Key.Key_L: QsciScintilla.SCI_CHARRIGHT,
+            Qt.Key.Key_J: QsciScintilla.SCI_LINEDOWN,
+            Qt.Key.Key_K: QsciScintilla.SCI_LINEUP,
+            Qt.Key.Key_0: QsciScintilla.SCI_VCHOME,
+            Qt.Key.Key_X: QsciScintilla.SCI_CLEAR,
+            Qt.Key.Key_U: QsciScintilla.SCI_UNDO,
+        }
+        
+        if key in nav_map:
+            self.editor.SendScintilla(nav_map[key])
+            return True
+            
+        if text == "$":
+            self.editor.SendScintilla(QsciScintilla.SCI_LINEEND)
+            return True
+            
+        # Double-key commands (e.g., dd)
+        if text == "d":
+            if self._pending_op == "d":
+                self.editor.SendScintilla(QsciScintilla.SCI_LINEDELETE)
+                self._pending_op = None
+            else:
+                self._pending_op = "d"
+            return True
+        
+        self._pending_op = None
+        return True # Consume all other keys in Normal mode
 
 
 class EditorPanel(QWidget):
@@ -52,19 +119,28 @@ class EditorPanel(QWidget):
         
         self._setup_ui()
         self._setup_editor()
+        
+        # Initialize Vim Controller after setup_ui so _editor exists
+        self._vim_controller = VimController(self._editor)
+        self._editor.installEventFilter(self)
+        
         self._load_file()
         self._wire_signals()
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj == self._editor and event.type() == event.Type.KeyPress:
+            if self._vim_mode:
+                return self._vim_controller.handle_key(event)
+        return super().eventFilter(obj, event)
 
     def set_vim_mode(self, enabled: bool) -> None:
         """Enables or disables Vim (Vi) modal editing."""
         self._vim_mode = enabled
-        self._editor.setViMode(enabled)
         
         # Adjust caret width for better Vim feel
-        # 0 = block cursor (standard for Vi normal mode)
-        # 1 = line cursor
         if enabled:
             self._editor.setCursorWidth(0)
+            self._vim_controller.mode = VimController.MODE_NORMAL
         else:
             self._editor.setCursorWidth(1)
         
