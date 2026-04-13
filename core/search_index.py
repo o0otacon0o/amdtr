@@ -29,25 +29,46 @@ class SearchIndex:
                 path UNINDEXED, 
                 title, 
                 content,
+                mtime UNINDEXED,
                 tokenize='unicode61'
             )
         """)
         self._conn.commit()
 
+    def get_indexed_mtime(self, path: Path) -> float:
+        """Returns the last known modified time of a file from the index."""
+        cursor = self._conn.cursor()
+        cursor.execute("SELECT mtime FROM notes_fts WHERE path = ?", (str(path),))
+        row = cursor.fetchone()
+        return float(row[0]) if row and row[0] is not None else 0.0
+
     def add_or_update(self, path: Path, content: str) -> None:
         """Adds a file to the index or updates it."""
-        rel_path = str(path)
-        title = path.stem
-        
+        self.batch_add([(path, content)])
+
+    def batch_add(self, entries: List[Tuple[Path, str]]) -> None:
+        """Adds multiple files in a single transaction."""
+        if not entries:
+            return
+            
         cursor = self._conn.cursor()
-        # First delete old entry (if present)
-        cursor.execute("DELETE FROM notes_fts WHERE path = ?", (rel_path,))
-        # Insert new entry
-        cursor.execute(
-            "INSERT INTO notes_fts(path, title, content) VALUES (?, ?, ?)",
-            (rel_path, title, content)
-        )
-        self._conn.commit()
+        try:
+            for path, content in entries:
+                rel_path = str(path)
+                title = path.stem
+                mtime = path.stat().st_mtime if path.exists() else 0
+                
+                # Delete old entry
+                cursor.execute("DELETE FROM notes_fts WHERE path = ?", (rel_path,))
+                # Insert new
+                cursor.execute(
+                    "INSERT INTO notes_fts(path, title, content, mtime) VALUES (?, ?, ?, ?)",
+                    (rel_path, title, content, mtime)
+                )
+            self._conn.commit()
+        except Exception as e:
+            self._conn.rollback()
+            print(f"[!] Batch indexing error: {e}")
 
     def remove(self, path: Path) -> None:
         """Removes a file from the index."""

@@ -809,21 +809,45 @@ class MainWindow(QMainWindow):
 
         class IndexWorker(QThread):
             finished = pyqtSignal()
-            
+
             def __init__(self, workspace: Workspace):
                 super().__init__()
                 self.workspace = workspace
-                
+
             def run(self):
                 print(f"[*] Starting background indexing for {self.workspace.name}...")
-                for note_path in self.workspace.all_notes():
+                notes = self.workspace.all_notes()
+                batch = []
+                count = 0
+
+                for note_path in notes:
                     try:
+                        # 1. Skip if file hasn't changed
+                        mtime = note_path.stat().st_mtime
+                        if self.workspace.index.get_indexed_mtime(note_path) >= mtime:
+                            continue
+
+                        # 2. Add to batch
                         content = note_path.read_text(encoding="utf-8")
-                        self.workspace.index.add_or_update(note_path, content)
+                        batch.append((note_path, content))
+                        count += 1
+
+                        # Commit in smaller chunks if the workspace is massive
+                        if len(batch) >= 100:
+                            self.workspace.index.batch_add(batch)
+                            batch = []
                     except Exception:
                         pass
-                self.finished.emit()
 
+                # Final commit
+                if batch:
+                    self.workspace.index.batch_add(batch)
+
+                if count > 0:
+                    print(f"[+] Re-indexed {count} changed files.")
+                else:
+                    print("[+] Workspace is up to date.")
+                self.finished.emit()
         self._index_thread = IndexWorker(self._workspace)
         self._index_thread.finished.connect(lambda: print("[+] Indexing complete."))
         self._index_thread.start()

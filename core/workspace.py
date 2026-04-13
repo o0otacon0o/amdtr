@@ -65,11 +65,12 @@ class Workspace:
         """Gibt eine Liste aller Markdown-Dateien im Workspace zurück."""
         notes = []
         for ext in NOTE_EXTENSIONS:
+            # Using rglob is convenient but can be slow for massive trees.
+            # We convert to list for the current UI implementation, 
+            # but the indexer could potentially use an iterator.
             notes.extend(self.root.rglob(f"*{ext}"))
         
-        # We no longer need to filter .amdtr from parts since it's central,
-        # but we keep it for backward compatibility or in case users have 
-        # local .amdtr folders from other versions.
+        # Filter and sort
         return sorted([n for n in notes if ".amdtr" not in n.parts])
 
     def resolve_wikilink(self, name: str) -> Path | None:
