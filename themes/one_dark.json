@@ -9,6 +9,8 @@
         "line_number_bg": "#282c34",
         "line_number_fg": "#4b5263",
         "current_line": "#2c323c",
+        "marker_added": "#98c379",
+        "marker_modified": "#e5c07b",
         "tokens": {
             "DEFAULT": { "color": "#abb2bf" },
             "HEADING_1": { "color": "#e06c75", "bold": true },
