@@ -10,9 +10,9 @@ from __future__ import annotations
 import difflib
 from pathlib import Path
 from typing import Optional
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
-from PyQt6.QtCore import pyqtSignal, Qt, QTimer
-from PyQt6.QtGui import QFont, QFontDatabase, QCursor, QColor
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMessageBox, QMenu
+from PyQt6.QtCore import pyqtSignal, Qt, QTimer, QUrl
+from PyQt6.QtGui import QFont, QFontDatabase, QCursor, QColor, QAction, QGuiApplication, QDesktopServices
 from PyQt6.Qsci import QsciScintilla, QsciCommand
 from core.document_model import DocumentModel
 from core.file_manager import FileManager
@@ -248,6 +248,30 @@ class EditorPanel(QWidget):
         # Mouse events for wikilink navigation
         self._editor.mousePressEvent = self._on_mouse_press
         
+    def contextMenuEvent(self, event) -> None:
+        """Shows context menu with Reveal in Explorer action."""
+        menu = self._editor.createStandardContextMenu()
+        
+        menu.addSeparator()
+        
+        reveal_action = QAction("Reveal in Explorer", self)
+        reveal_action.triggered.connect(lambda: self._reveal_in_explorer())
+        menu.addAction(reveal_action)
+        
+        copy_path_action = QAction("Copy Path", self)
+        copy_path_action.triggered.connect(lambda: QGuiApplication.clipboard().setText(str(self.path())))
+        menu.addAction(copy_path_action)
+        
+        menu.exec(event.globalPos())
+
+    def _reveal_in_explorer(self) -> None:
+        """Opens the folder containing the file."""
+        path = self.path()
+        if not path.exists():
+            return
+        folder = path.parent
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+
     def set_theme(self, theme: EditorTheme) -> None:
         """Applies an editor theme."""
         # Colors for editor widget
