@@ -4,10 +4,6 @@ MainWindow — the main window of the application.
 
 from __future__ import annotations
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ui.splash_screen import SplashScreen
 
 from PyQt6.QtWidgets import (
     QMainWindow, QSplitter, QLabel, QFileDialog,
@@ -30,10 +26,9 @@ from themes.schema import Theme
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, version: str = "0.0.0", splash: SplashScreen | None = None) -> None:
+    def __init__(self, version: str = "0.0.0") -> None:
         super().__init__()
         self._version = version
-        self._splash = splash
         self._workspace: Workspace | None = None
         self._session_manager = SessionManager(self)
         self._settings = QSettings("amdtr", "app")
@@ -45,20 +40,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"amdtr v{self._version}")
         self.resize(1280, 800)
 
-        if self._splash:
-            self._splash.set_progress(20, "Building UI components...")
         self._build_central()
-        
-        if self._splash:
-            self._splash.set_progress(40, "Creating menus...")
         self._build_menu()
-        
-        if self._splash:
-            self._splash.set_progress(60, "Initializing status bar...")
         self._build_status_bar()
-        
-        if self._splash:
-            self._splash.set_progress(80, "Setting up command palette...")
         self._build_command_palette()
         self._build_search_palette()
         self._wire_signals()

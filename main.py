@@ -9,8 +9,6 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
-from ui.main_window import MainWindow
-
 def resource_path(relative_path: str) -> Path:
     """Get absolute path to resource, works for dev and for PyInstaller."""
     try:
@@ -43,25 +41,17 @@ def main() -> None:
     # Fusion Style
     app.setStyle("Fusion")
 
-    from ui.splash_screen import SplashScreen
-    logo_path = resource_path("amdtr-logo.png")
-    splash = SplashScreen(str(logo_path))
-    splash.show()
+    from ui.main_window import MainWindow
+    window = MainWindow(version=__version__)
     
-    # Animate the splash screen
-    from PyQt6.QtCore import QTimer
-    timer = QTimer()
-    timer.timeout.connect(splash.repaint)
-    timer.start(16) # ~60 FPS
+    # Close native PyInstaller splash if present just before showing window
+    try:
+        import pyi_splash
+        pyi_splash.close()
+    except ImportError:
+        pass
 
-    app.processEvents()
-
-    window = MainWindow(version=__version__, splash=splash)
-    
-    # Let MainWindow do its thing, then hide splash
     window.show()
-    splash.finish(window)
-    timer.stop()
 
     sys.exit(app.exec())
 

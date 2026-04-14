@@ -44,9 +44,10 @@ def build():
         'main.py',                    # Entry point
         '--name=amdtr',               # App-Name
         '--icon=amdtr-icon.png',       # Icon-File
-        '--onefile',                  # Single EXE
+        '--onedir',                   # Faster startup than onefile
         '--windowed',                 # No console
         '--clean',                    # Clear cache
+        '--splash=amdtr-logo.png',    # Native splash for immediate feedback
     ]
     
     # Add data paths
