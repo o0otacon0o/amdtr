@@ -17,6 +17,29 @@
             --link: #0969da;
             --blockquote: #656d76;
             --border: #d1d9e0;
+            --scrollbar-bg: #ffffff;
+            --scrollbar-thumb: #d1d9e0;
+            --scrollbar-thumb-hover: #0969da;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-bg);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border: 2px solid var(--scrollbar-bg);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
         }
         
         body {
