@@ -199,6 +199,110 @@ class Sidebar(QWidget):
 
     # ── Public API ────────────────────────────────────────────────────
 
+    @property
+    def outline(self) -> OutlinePanel:
+        """Access to the outline panel."""
+        return self._outline
+
+    def set_theme(self, theme: Theme) -> None:
+        """Applies theme colors to the sidebar components."""
+        # 1. Tree View
+        self._tree.setStyleSheet(f"""
+            QTreeView {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+            }}
+            QTreeView::item:selected {{
+                background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
+            }}
+        """)
+        
+        # 2. Search input
+        self._search_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {theme.ui.button_bg};
+                color: {theme.ui.sidebar_fg};
+                border: 1px solid {theme.ui.border};
+                border-radius: 4px;
+                padding: 4px;
+            }}
+        """)
+        
+        # 3. Tab Widget
+        self._tabs.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border-top: 1px solid {theme.ui.border};
+            }}
+            QTabBar::tab {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                padding: 6px;
+                min-width: 80px;
+            }}
+            QTabBar::tab:selected {{
+                background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
+                border-top: 2px solid {theme.preview.link};
+            }}
+        """)
+        
+        # 4. Outline Panel
+        self._outline.set_theme(theme)
+
+    @property
+    def outline(self) -> OutlinePanel:
+        """Access to the outline panel."""
+        return self._outline
+
+    def set_theme(self, theme: Theme) -> None:
+        """Applies theme colors to the sidebar components."""
+        # 1. Tree View
+        self._tree.setStyleSheet(f"""
+            QTreeView {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+            }}
+            QTreeView::item:selected {{
+                background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
+            }}
+        """)
+        
+        # 2. Search input
+        self._search_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {theme.ui.button_bg};
+                color: {theme.ui.sidebar_fg};
+                border: 1px solid {theme.ui.border};
+                border-radius: 4px;
+                padding: 4px;
+            }}
+        """)
+        
+        # 3. Tab Widget
+        self._tabs.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border-top: 1px solid {theme.ui.border};
+            }}
+            QTabBar::tab {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                padding: 6px;
+                min-width: 80px;
+            }}
+            QTabBar::tab:selected {{
+                background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
+                border-top: 2px solid {theme.preview.link};
+            }}
+        """)
+        
+        # 4. Outline Panel
+        self._outline.set_theme(theme)
+
     def set_workspace(self, ws: Workspace | None) -> None:
         """Called by MainWindow when a workspace is opened or closed."""
         self._workspace = ws

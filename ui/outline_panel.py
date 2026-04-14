@@ -37,11 +37,26 @@ class OutlinePanel(QWidget):
         self._tree.setHeaderHidden(True)
         self._tree.setIndentation(15)
         self._tree.setAnimated(True)
-        self._tree.setStyleSheet("border: none; outline: none;")
         
         layout.addWidget(self._tree)
         
         self._tree.itemClicked.connect(self._on_item_clicked)
+
+    def set_theme(self, theme: Theme):
+        """Applies theme colors to the outline tree."""
+        qss = f"""
+            QTreeWidget {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+                outline: none;
+            }}
+            QTreeWidget::item:selected {{
+                background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
+            }}
+        """
+        self._tree.setStyleSheet(qss)
 
     def update_outline(self, text: str):
         """Extrahiert Header und baut den Baum neu auf."""

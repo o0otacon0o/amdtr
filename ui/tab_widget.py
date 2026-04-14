@@ -163,6 +163,35 @@ class TabWidget(QTabWidget):
         self._rebuild_path_index()
         self.setCurrentWidget(editor)
 
+    def active_file(self) -> Path | None:
+        """Returns the path of the currently active file."""
+        w = self.currentWidget()
+        if isinstance(w, EditorPreviewSplit):
+            return w.path()
+        return None
+
+    def current_editor(self) -> EditorPreviewSplit | None:
+        """Returns the currently active editor widget."""
+        w = self.currentWidget()
+        if isinstance(w, EditorPreviewSplit):
+            return w
+        return None
+
+    def is_current_dirty(self) -> bool:
+        """Returns True if the current file has unsaved changes."""
+        w = self.currentWidget()
+        if isinstance(w, EditorPreviewSplit):
+            return w.is_dirty()
+        return False
+
+    def has_dirty_tabs(self) -> bool:
+        """Returns True if any open tab has unsaved changes."""
+        for i in range(self.count()):
+            w = self.widget(i)
+            if isinstance(w, EditorPreviewSplit) and w.is_dirty():
+                return True
+        return False
+
     def save_current(self) -> None:
         w = self.currentWidget()
         if isinstance(w, EditorPreviewSplit):
