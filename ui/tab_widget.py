@@ -18,9 +18,10 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QTabWidget, QWidget, QVBoxLayout, QLabel,
-    QTabBar, QMessageBox,
+    QTabBar, QMessageBox, QMenu,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QUrl
+from PyQt6.QtGui import QAction, QGuiApplication, QDesktopServices
 from ui.editor_preview_split import EditorPreviewSplit
 from core.wikilink_resolver import WikilinkResolver
 from core.workspace import Workspace
@@ -68,6 +69,8 @@ class TabWidget(QTabWidget):
     """
 
     active_file_changed = pyqtSignal(object)  # Path | None
+    tab_added = pyqtSignal(Path)
+    tab_removed = pyqtSignal(Path)
     dirty_state_changed = pyqtSignal()
     vim_status_changed = pyqtSignal(str)   # Mode + pending keys
 
@@ -77,6 +80,10 @@ class TabWidget(QTabWidget):
         self.setMovable(True)
         self.setDocumentMode(True)
         self.setElideMode(Qt.TextElideMode.ElideMiddle)
+
+        # Context Menu for Tabs
+        self.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tabBar().customContextMenuRequested.connect(self._on_tab_context_menu)
 
         # Mapping: resolved path → tab index for fast lookups
         self._open_paths: dict[Path, int] = {}
@@ -162,6 +169,7 @@ class TabWidget(QTabWidget):
 
         self._rebuild_path_index()
         self.setCurrentWidget(editor)
+        self.tab_added.emit(path)
 
     def active_file(self) -> Path | None:
         """Returns the path of the currently active file."""
@@ -238,6 +246,44 @@ class TabWidget(QTabWidget):
 
     # ── Slots ─────────────────────────────────────────────────────────
 
+    def _on_tab_context_menu(self, pos: QPoint) -> None:
+        """Shows context menu for a tab."""
+        index = self.tabBar().tabAt(pos)
+        if index == -1:
+            return
+
+        widget = self.widget(index)
+        if not isinstance(widget, EditorPreviewSplit):
+            return
+
+        file_path = widget.path()
+        
+        menu = QMenu(self)
+        
+        reveal_action = QAction("Reveal in Explorer", self)
+        reveal_action.triggered.connect(lambda: self._reveal_in_explorer(file_path))
+        menu.addAction(reveal_action)
+        
+        copy_path_action = QAction("Copy Path", self)
+        copy_path_action.triggered.connect(lambda: QGuiApplication.clipboard().setText(str(file_path)))
+        menu.addAction(copy_path_action)
+        
+        menu.addSeparator()
+        
+        close_action = QAction("Close", self)
+        close_action.triggered.connect(lambda: self._on_close_requested(index))
+        menu.addAction(close_action)
+        
+        menu.exec(self.tabBar().mapToGlobal(pos))
+
+    def _reveal_in_explorer(self, path: Path) -> None:
+        """Opens the folder containing the file and selects it."""
+        if not path.exists():
+            return
+            
+        folder = path.parent
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+
     def _on_close_requested(self, index: int) -> None:
         w = self.widget(index)
 
@@ -256,7 +302,9 @@ class TabWidget(QTabWidget):
                 w.save()
 
         if isinstance(w, EditorPreviewSplit):
-            self._open_paths.pop(w.path(), None)
+            path = w.path()
+            self._open_paths.pop(path, None)
+            self.tab_removed.emit(path)
 
         self.removeTab(index)
         self._rebuild_path_index()

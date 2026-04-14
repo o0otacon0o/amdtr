@@ -13,6 +13,7 @@ from PyQt6.QtCore import Qt, QSettings, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QKeySequence, QPixmap
 
 from core.workspace import Workspace
+from core.session_manager import SessionManager
 from preview.exporter import HTMLExporter
 from ui.sidebar import Sidebar
 from ui.tab_widget import TabWidget
@@ -29,6 +30,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._version = version
         self._workspace: Workspace | None = None
+        self._session_manager = SessionManager(self)
         self._settings = QSettings("amdtr", "app")
         self._html_exporter = HTMLExporter()
 
@@ -401,8 +403,10 @@ class MainWindow(QMainWindow):
         self._sidebar.outline_item_clicked.connect(self._on_outline_item_clicked)
         self._sidebar.open_workspace_requested.connect(self._load_workspace)
         self._tabs.active_file_changed.connect(self._on_active_file_changed)
+        self._tabs.tab_added.connect(lambda p: self._session_manager.add_tab(p))
+        self._tabs.tab_removed.connect(lambda p: self._session_manager.remove_tab(p))
         self._tabs.currentChanged.connect(self._update_outline) 
-        self._tabs.dirty_state_changed.connect(self._on_dirty_state_changed)
+        self._tabs.currentChanged.connect(lambda idx: self._session_manager.set_active_tab(idx))
         self._tabs.vim_status_changed.connect(self._update_vim_status)
         self._command_palette.file_requested.connect(self._tabs.open_file)
         self._command_palette.action_requested.connect(self._on_command_palette_action)
@@ -578,6 +582,33 @@ class MainWindow(QMainWindow):
         self._workspace = ws; self._sidebar.set_workspace(ws); self._sidebar.show()
         if hasattr(self, '_btn_sidebar'): self._btn_sidebar.setChecked(True)
         self._command_palette.set_workspace(ws); self._search_palette.set_workspace(ws); self._tabs.set_workspace(ws)
+        
+        # Initialize session for this workspace
+        self._session_manager.start_workspace_session(ws.root)
+        
+        # Restore open tabs from session
+        session = self._session_manager._current_session
+        if session and session.open_tabs:
+            # Block auto-save during batch opening
+            self._session_manager._auto_save_timer.stop()
+            for tab_session in session.open_tabs:
+                file_path = Path(tab_session.file_path)
+                if file_path.exists():
+                    self._tabs.open_file(file_path)
+                    # Restore cursor position
+                    editor_split = self._tabs.current_editor()
+                    if editor_split:
+                        editor_split.editor().set_cursor_position(
+                            tab_session.cursor_line, 
+                            tab_session.cursor_column
+                        )
+            
+            # Switch to the active tab
+            if 0 <= session.active_tab_index < self._tabs.count():
+                self._tabs.setCurrentIndex(session.active_tab_index)
+            
+            self._session_manager._auto_save_timer.start(5000)
+
         self.setWindowTitle(f"amdtr — {ws.name}"); self._lbl_workspace.setText(str(ws.root)); self._settings.setValue("last_workspace", str(ws.root))
         self._index_workspace_background()
 
