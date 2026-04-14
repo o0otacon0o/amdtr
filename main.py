@@ -43,8 +43,25 @@ def main() -> None:
     # Fusion Style
     app.setStyle("Fusion")
 
-    window = MainWindow(version=__version__)
+    from ui.splash_screen import SplashScreen
+    logo_path = resource_path("amdtr-logo.png")
+    splash = SplashScreen(str(logo_path))
+    splash.show()
+    
+    # Animate the splash screen
+    from PyQt6.QtCore import QTimer
+    timer = QTimer()
+    timer.timeout.connect(splash.repaint)
+    timer.start(16) # ~60 FPS
+
+    app.processEvents()
+
+    window = MainWindow(version=__version__, splash=splash)
+    
+    # Let MainWindow do its thing, then hide splash
     window.show()
+    splash.finish(window)
+    timer.stop()
 
     sys.exit(app.exec())
 
