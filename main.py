@@ -9,8 +9,6 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
-from ui.main_window import MainWindow
-
 def resource_path(relative_path: str) -> Path:
     """Get absolute path to resource, works for dev and for PyInstaller."""
     try:
@@ -43,7 +41,16 @@ def main() -> None:
     # Fusion Style
     app.setStyle("Fusion")
 
+    from ui.main_window import MainWindow
     window = MainWindow(version=__version__)
+    
+    # Close native PyInstaller splash if present just before showing window
+    try:
+        import pyi_splash
+        pyi_splash.close()
+    except ImportError:
+        pass
+
     window.show()
 
     sys.exit(app.exec())

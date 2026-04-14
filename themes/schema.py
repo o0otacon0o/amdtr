@@ -130,7 +130,10 @@ class PreviewTheme:
             "--code-bg": self.code_bg,
             "--border": self.border,
             "--syntax": self.syntax,
-            "--mermaid": self.mermaid
+            "--mermaid": self.mermaid,
+            "--scrollbar-bg": self.background,
+            "--scrollbar-thumb": self.border,
+            "--scrollbar-thumb-hover": self.link
         }
     
     def to_css(self) -> str:
