@@ -1,4 +1,4 @@
-# amdtr (Another Markdown Editor) v1.0.0
+# amdtr (Another Markdown Editor) v1.1.0
 
 ![amdtr Logo](amdtr-logo.png)
 

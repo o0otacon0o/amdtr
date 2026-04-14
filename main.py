@@ -19,7 +19,7 @@ def resource_path(relative_path: str) -> Path:
 
     return base_path / relative_path
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 def main() -> None:
     # Essential for lazy WebEngine loading
