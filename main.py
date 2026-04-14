@@ -24,6 +24,9 @@ def resource_path(relative_path: str) -> Path:
 __version__ = "1.0.0"
 
 def main() -> None:
+    # Essential for lazy WebEngine loading
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+
     # High-DPI-Scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
