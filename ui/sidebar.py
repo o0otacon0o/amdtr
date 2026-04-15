@@ -128,19 +128,17 @@ class Sidebar(QWidget):
 
     def _build_header(self) -> QWidget:
         frame = QFrame()
-        frame.setFrameShape(QFrame.Shape.StyledPanel)
-        frame.setFixedHeight(36)
+        frame.setObjectName("SidebarHeader")
+        frame.setFixedHeight(40)
 
         h = QHBoxLayout(frame)
-        h.setContentsMargins(8, 0, 4, 0)
+        h.setContentsMargins(12, 0, 8, 0)
         h.setSpacing(4)
 
-        self._lbl_workspace = QLabel("No workspace")
-        self._lbl_workspace.setStyleSheet("font-size: 11px; font-weight: 600;")
+        self._lbl_workspace = QLabel("NO WORKSPACE")
         self._lbl_workspace.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
         )
-        # elided text: "..." is appended if there's not enough space
         self._lbl_workspace.setTextInteractionFlags(
             Qt.TextInteractionFlag.NoTextInteraction
         )
@@ -148,7 +146,7 @@ class Sidebar(QWidget):
         btn_open = QToolButton()
         btn_open.setText("…")
         btn_open.setToolTip("Open workspace folder (Ctrl+Shift+O)")
-        btn_open.setFixedSize(22, 22)
+        btn_open.setFixedSize(24, 24)
         btn_open.clicked.connect(self._on_open_btn_clicked)
 
         h.addWidget(self._lbl_workspace)
@@ -157,45 +155,18 @@ class Sidebar(QWidget):
 
     def _build_search(self) -> QWidget:
         container = QWidget()
-        container.setFixedHeight(34)
+        container.setFixedHeight(38)
         h = QHBoxLayout(container)
-        h.setContentsMargins(6, 4, 6, 4)
+        h.setContentsMargins(10, 6, 10, 6)
 
         self._search_input = QLineEdit()
         self._search_input.setPlaceholderText("Filter files…")
         self._search_input.setClearButtonEnabled(True)
 
-        # textChanged: Signal that fires on every character input
-        # and provides the current text as a string
         self._search_input.textChanged.connect(self._on_filter_changed)
 
         h.addWidget(self._search_input)
         return container
-
-    def _build_tree(self) -> QTreeView:
-        self._tree = QTreeView()
-        self._tree.setModel(self._proxy)
-
-        # Enable context menu
-        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._tree.customContextMenuRequested.connect(self._on_custom_context_menu)
-
-        # Show only the name column (0), hide the rest
-        self._tree.setHeaderHidden(True)
-        for col in range(1, 4):
-            self._tree.hideColumn(col)
-
-        self._tree.setAnimated(True)
-        self._tree.setUniformRowHeights(True)
-        self._tree.setWordWrap(False)
-
-        # Prevent the user from renaming files directly in the tree
-        self._tree.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
-
-        # activated fires on double-click OR Enter key
-        self._tree.activated.connect(self._on_item_activated)
-
-        return self._tree
 
     # ── Public API ────────────────────────────────────────────────────
 
@@ -206,16 +177,48 @@ class Sidebar(QWidget):
 
     def set_theme(self, theme: Theme) -> None:
         """Applies theme colors to the sidebar components."""
+        # Header
+        self.setStyleSheet(f"""
+            #SidebarHeader {{
+                background-color: {theme.ui.sidebar_bg};
+                border-bottom: 1px solid {theme.ui.border};
+            }}
+            QLabel {{
+                color: {theme.ui.sidebar_fg};
+                font-size: 10px;
+                font-weight: bold;
+                letter-spacing: 0.5px;
+            }}
+            QToolButton {{
+                background-color: transparent;
+                border: none;
+                border-radius: 4px;
+                color: {theme.ui.sidebar_fg};
+            }}
+            QToolButton:hover {{
+                background-color: {theme.ui.button_bg};
+            }}
+        """)
+
         # 1. Tree View
         self._tree.setStyleSheet(f"""
             QTreeView {{
                 background-color: {theme.ui.sidebar_bg};
                 color: {theme.ui.sidebar_fg};
                 border: none;
+                padding: 4px;
+            }}
+            QTreeView::item {{
+                padding: 4px;
+                border-radius: 4px;
+            }}
+            QTreeView::item:hover {{
+                background-color: {theme.ui.button_bg};
             }}
             QTreeView::item:selected {{
                 background-color: {theme.ui.tab_active_bg};
-                color: {theme.ui.tab_active_fg};
+                color: {theme.preview.link};
+                font-weight: bold;
             }}
         """)
         
@@ -226,77 +229,35 @@ class Sidebar(QWidget):
                 color: {theme.ui.sidebar_fg};
                 border: 1px solid {theme.ui.border};
                 border-radius: 4px;
-                padding: 4px;
+                padding: 4px 8px;
+                font-size: 12px;
+            }}
+            QLineEdit:focus {{
+                border-color: {theme.preview.link};
             }}
         """)
         
-        # 3. Tab Widget
+        # 3. Tab Widget (Sidebar Bottom Tabs)
         self._tabs.setStyleSheet(f"""
             QTabWidget::pane {{
                 border-top: 1px solid {theme.ui.border};
+                background-color: {theme.ui.sidebar_bg};
             }}
             QTabBar::tab {{
                 background-color: {theme.ui.sidebar_bg};
-                color: {theme.ui.sidebar_fg};
-                padding: 6px;
-                min-width: 80px;
-            }}
-            QTabBar::tab:selected {{
-                background-color: {theme.ui.tab_active_bg};
-                color: {theme.ui.tab_active_fg};
-                border-top: 2px solid {theme.preview.link};
-            }}
-        """)
-        
-        # 4. Outline Panel
-        self._outline.set_theme(theme)
-
-    @property
-    def outline(self) -> OutlinePanel:
-        """Access to the outline panel."""
-        return self._outline
-
-    def set_theme(self, theme: Theme) -> None:
-        """Applies theme colors to the sidebar components."""
-        # 1. Tree View
-        self._tree.setStyleSheet(f"""
-            QTreeView {{
-                background-color: {theme.ui.sidebar_bg};
-                color: {theme.ui.sidebar_fg};
+                color: {theme.ui.tab_inactive_fg};
+                padding: 6px 12px;
+                min-width: 60px;
+                font-size: 11px;
                 border: none;
             }}
-            QTreeView::item:selected {{
-                background-color: {theme.ui.tab_active_bg};
-                color: {theme.ui.tab_active_fg};
-            }}
-        """)
-        
-        # 2. Search input
-        self._search_input.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: {theme.ui.button_bg};
-                color: {theme.ui.sidebar_fg};
-                border: 1px solid {theme.ui.border};
-                border-radius: 4px;
-                padding: 4px;
-            }}
-        """)
-        
-        # 3. Tab Widget
-        self._tabs.setStyleSheet(f"""
-            QTabWidget::pane {{
-                border-top: 1px solid {theme.ui.border};
-            }}
-            QTabBar::tab {{
-                background-color: {theme.ui.sidebar_bg};
-                color: {theme.ui.sidebar_fg};
-                padding: 6px;
-                min-width: 80px;
-            }}
             QTabBar::tab:selected {{
-                background-color: {theme.ui.tab_active_bg};
-                color: {theme.ui.tab_active_fg};
+                color: {theme.preview.link};
                 border-top: 2px solid {theme.preview.link};
+                background-color: {theme.ui.tab_active_bg};
+            }}
+            QTabBar::tab:hover:!selected {{
+                background-color: {theme.ui.button_bg};
             }}
         """)
         

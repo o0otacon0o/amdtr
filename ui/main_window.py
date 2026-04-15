@@ -121,14 +121,20 @@ class MainWindow(QMainWindow):
                 background-color: {theme.ui.button_bg};
             }}
 
-            /* Action Buttons in MenuBar */
+            /* Unified Header Bar */
+            QMenuBar {{
+                background-color: {theme.ui.sidebar_bg};
+                border-bottom: 1px solid {theme.ui.border};
+                padding: 4px;
+            }}
+
             QMenuBar QToolButton {{
                 background-color: transparent;
                 border: none;
                 border-radius: 4px;
-                padding: 4px;
+                padding: 4px 8px;
                 margin: 0 2px;
-                font-size: 14px;
+                font-size: 13px;
                 color: {theme.ui.sidebar_fg};
             }}
 
@@ -136,13 +142,38 @@ class MainWindow(QMainWindow):
                 background-color: {theme.ui.button_bg};
             }}
 
-            QMenuBar QToolButton:pressed {{
+            QMenuBar QToolButton:pressed, QMenuBar QToolButton:checked {{
                 background-color: {theme.ui.tab_active_bg};
+                color: {theme.preview.link};
             }}
 
-            QMenuBar QToolButton:checked {{
-                background-color: {theme.ui.tab_active_bg};
-                border: 1px solid {theme.preview.link};
+            /* Flat Tab Bar */
+            QTabBar::tab {{
+                background: {theme.ui.tab_inactive_bg};
+                color: {theme.ui.tab_inactive_fg};
+                padding: 8px 16px;
+                border: none;
+                border-right: 1px solid {theme.ui.border};
+                min-width: 100px;
+            }}
+
+            QTabBar::tab:selected {{
+                background: {theme.ui.tab_active_bg};
+                color: {theme.ui.tab_active_fg};
+                border-bottom: 2px solid {theme.preview.link};
+            }}
+
+            QTabBar::tab:hover:!selected {{
+                background: {theme.ui.button_bg};
+            }}
+
+            /* Modern Splitter */
+            QSplitter::handle {{
+                background: {theme.ui.border};
+            }}
+            
+            QSplitter::handle:horizontal {{
+                width: 1px;
             }}
 
             /* Status Bar */
@@ -151,6 +182,36 @@ class MainWindow(QMainWindow):
                 color: {theme.ui.sidebar_fg};
                 border-top: 1px solid {theme.ui.border};
                 font-size: 11px;
+                padding: 2px;
+            }}
+
+            /* Flat Buttons */
+            QPushButton {{
+                background-color: {theme.ui.button_bg};
+                color: {theme.ui.button_fg};
+                border: 1px solid {theme.ui.border};
+                border-radius: 4px;
+                padding: 5px 12px;
+                font-size: 12px;
+            }}
+
+            QPushButton:hover {{
+                background-color: {theme.ui.tab_active_bg};
+                border-color: {theme.preview.link};
+            }}
+
+            /* Flat Inputs */
+            QLineEdit {{
+                background-color: {theme.ui.tab_active_bg};
+                color: {theme.ui.sidebar_fg};
+                border: 1px solid {theme.ui.border};
+                border-radius: 4px;
+                padding: 4px 8px;
+                selection-background-color: {theme.preview.link};
+            }}
+
+            QLineEdit:focus {{
+                border-color: {theme.preview.link};
             }}
 
             /* Menu Bar Dropdowns */
@@ -162,12 +223,13 @@ class MainWindow(QMainWindow):
             }}
 
             QMenu::item {{
-                padding: 4px 20px;
-                border-radius: 2px;
+                padding: 6px 24px;
+                border-radius: 3px;
             }}
 
             QMenu::item:selected {{
                 background-color: {theme.ui.button_bg};
+                color: {theme.preview.link};
             }}
         """
         self.setStyleSheet(qss)

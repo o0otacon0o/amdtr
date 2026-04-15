@@ -37,25 +37,52 @@ class WelcomeWidget(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setSpacing(8)
+        layout.setSpacing(12)
 
         title = QLabel("amdtr")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("font-size: 32px; font-weight: 200; color: #888;")
+        title.setStyleSheet("font-size: 48px; font-weight: 100; color: #555; margin-bottom: 20px;")
 
-        shortcuts = QLabel(
-            "Open workspace:  Ctrl+Shift+O\n"
-            "Open file:           Ctrl+O\n"
-            "Command palette:  Ctrl+P"
-        )
-        shortcuts.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        shortcuts.setStyleSheet(
-            "font-family: monospace; font-size: 12px; color: #aaa; line-height: 1.8;"
-        )
+        shortcuts_container = QWidget()
+        shortcuts_layout = QVBoxLayout(shortcuts_container)
+        shortcuts_layout.setSpacing(10)
+        
+        def add_shortcut(label, keys):
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            
+            lbl = QLabel(label)
+            lbl.setStyleSheet("color: #888; font-size: 13px;")
+            
+            key_lbl = QLabel(keys)
+            key_lbl.setStyleSheet("""
+                background-color: #f0f0f0; 
+                border: 1px solid #ddd; 
+                border-radius: 4px; 
+                padding: 2px 6px; 
+                color: #555; 
+                font-family: monospace;
+                font-size: 11px;
+            """)
+            
+            row_layout.addWidget(lbl)
+            row_layout.addStretch()
+            row_layout.addWidget(key_lbl)
+            shortcuts_layout.addWidget(row)
 
+        add_shortcut("Open Workspace", "Ctrl+Shift+O")
+        add_shortcut("Open File", "Ctrl+O")
+        add_shortcut("Command Palette", "Ctrl+P")
+        add_shortcut("Global Search", "Ctrl+Shift+F")
+        add_shortcut("Toggle Sidebar", "Ctrl+B")
+
+        shortcuts_container.setFixedWidth(300)
+        
+        layout.addStretch()
         layout.addWidget(title)
-        layout.addSpacing(16)
-        layout.addWidget(shortcuts)
+        layout.addWidget(shortcuts_container)
+        layout.addStretch()
 
 
 # ── Tab widget ────────────────────────────────────────────────────────
