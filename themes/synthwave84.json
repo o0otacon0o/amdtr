@@ -1,0 +1,60 @@
+{
+    "name": "SynthWave 84",
+    "dark": true,
+    "editor": {
+        "background": "#262335",
+        "foreground": "#ffffff",
+        "selection_bg": "#444351",
+        "selection_fg": "#ffffff",
+        "line_number_bg": "#262335",
+        "line_number_fg": "#848bb2",
+        "current_line": "#2a2139",
+        "marker_added": "#72f1b8",
+        "marker_modified": "#fede5d",
+        "marker_deleted": "#fe4450",
+        "tokens": {
+            "DEFAULT": { "color": "#ffffff" },
+            "HEADING_1": { "color": "#ff7edb", "bold": true },
+            "HEADING_2": { "color": "#ff7edb", "bold": true },
+            "HEADING_3": { "color": "#ff7edb", "bold": true },
+            "HEADING_4": { "color": "#ff7edb", "bold": true },
+            "HEADING_5": { "color": "#ff7edb", "bold": true },
+            "HEADING_6": { "color": "#ff7edb", "bold": true },
+            "BOLD": { "color": "#fede5d", "bold": true },
+            "ITALIC": { "color": "#03edf9", "italic": true },
+            "BOLD_ITALIC": { "color": "#fede5d", "bold": true, "italic": true },
+            "INLINE_CODE": { "color": "#72f1b8" },
+            "CODE_FENCE": { "color": "#848bb2" },
+            "MERMAID_FENCE": { "color": "#f92aad" },
+            "LINK_TEXT": { "color": "#03edf9" },
+            "LINK_URL": { "color": "#848bb2" },
+            "WIKILINK": { "color": "#03edf9" },
+            "WIKILINK_BROKEN": { "color": "#fe4450" },
+            "BLOCKQUOTE": { "color": "#848bb2", "italic": true },
+            "LIST_MARKER": { "color": "#f92aad" },
+            "HR": { "color": "#444351" },
+            "FRONTMATTER": { "color": "#848bb2" }
+        }
+    },
+    "ui": {
+        "sidebar_bg": "#241b2f",
+        "sidebar_fg": "#ffffff",
+        "tab_active_bg": "#262335",
+        "tab_active_fg": "#ffffff",
+        "tab_inactive_bg": "#241b2f",
+        "tab_inactive_fg": "#848bb2",
+        "border": "#171520",
+        "button_bg": "#444351",
+        "button_fg": "#ffffff"
+    },
+    "preview": {
+        "background": "#262335",
+        "foreground": "#ffffff",
+        "link": "#03edf9",
+        "heading": "#ff7edb",
+        "code-bg": "#2a2139",
+        "border": "#444351",
+        "syntax": "dark",
+        "mermaid": "dark"
+    }
+}
