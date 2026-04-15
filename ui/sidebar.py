@@ -232,16 +232,19 @@ class Sidebar(QWidget):
                 background-color: {theme.ui.sidebar_bg};
                 color: {theme.ui.sidebar_fg};
                 border: none;
-                padding: 4px;
+                show-decoration-selected: 1;
+                selection-background-color: {theme.ui.tab_active_bg};
+                selection-color: {theme.preview.link};
             }}
             QTreeView::item {{
                 padding: 4px;
-                border-radius: 4px;
+                background-color: transparent;
             }}
             QTreeView::item:hover {{
                 background-color: {theme.ui.button_bg};
             }}
             QTreeView::item:selected {{
+                background-color: {theme.ui.tab_active_bg};
                 color: {theme.preview.link};
                 font-weight: bold;
             }}
