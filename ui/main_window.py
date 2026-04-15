@@ -119,13 +119,7 @@ class MainWindow(QMainWindow):
 
             QMenuBar::item:selected {{
                 background-color: {theme.ui.button_bg};
-            }}
-
-            /* Unified Header Bar */
-            QMenuBar {{
-                background-color: {theme.ui.sidebar_bg};
-                border-bottom: 1px solid {theme.ui.border};
-                padding: 4px;
+                color: {theme.preview.link};
             }}
 
             QMenuBar QToolButton {{
@@ -185,6 +179,12 @@ class MainWindow(QMainWindow):
                 padding: 2px;
             }}
 
+            #VimStatusLabel {{
+                font-weight: bold;
+                color: {theme.preview.link};
+                margin-right: 10px;
+            }}
+
             /* Flat Buttons */
             QPushButton {{
                 background-color: {theme.ui.button_bg};
@@ -239,6 +239,10 @@ class MainWindow(QMainWindow):
 
         # 3. Inform Tabs
         self._tabs.set_theme(theme)
+
+        # 4. Inform Palettes
+        self._command_palette.set_theme(theme)
+        self._search_palette.set_theme(theme)
 
     # ── UI construction ───────────────────────────────────────────────
 
@@ -366,7 +370,7 @@ class MainWindow(QMainWindow):
 
         # 1. Sidebar Toggle
         self._btn_sidebar = QToolButton()
-        self._btn_sidebar.setText("📁")
+        self._btn_sidebar.setText("⊞")
         self._btn_sidebar.setCheckable(True)
         self._btn_sidebar.setChecked(True)
         self._btn_sidebar.setToolTip("Toggle Sidebar (Ctrl+B)")
@@ -374,32 +378,32 @@ class MainWindow(QMainWindow):
 
         # 2. New File
         self._btn_new = QToolButton()
-        self._btn_new.setText("➕")
+        self._btn_new.setText("+")
         self._btn_new.setToolTip("New File (Ctrl+N)")
         self._btn_new.clicked.connect(self._on_new_file)
 
         # 3. View Modes
         self._btn_view_editor = QToolButton()
-        self._btn_view_editor.setText("📝")
+        self._btn_view_editor.setText("T")
         self._btn_view_editor.setCheckable(True)
         self._btn_view_editor.setToolTip("Editor Only")
         self._btn_view_editor.clicked.connect(lambda: self._on_set_view_mode('editor'))
 
         self._btn_view_split = QToolButton()
-        self._btn_view_split.setText("🌓")
+        self._btn_view_split.setText("S")
         self._btn_view_split.setCheckable(True)
         self._btn_view_split.setToolTip("Split View")
         self._btn_view_split.clicked.connect(lambda: self._on_set_view_mode('split'))
 
         self._btn_view_preview = QToolButton()
-        self._btn_view_preview.setText("👁️")
+        self._btn_view_preview.setText("V")
         self._btn_view_preview.setCheckable(True)
         self._btn_view_preview.setToolTip("Preview Only")
         self._btn_view_preview.clicked.connect(lambda: self._on_set_view_mode('preview'))
 
         # 3.5 Scroll Sync Toggle
         self._btn_sync = QToolButton()
-        self._btn_sync.setText("🔗")
+        self._btn_sync.setText("∞")
         self._btn_sync.setCheckable(True)
         self._btn_sync.setChecked(False)
         self._btn_sync.setToolTip("Toggle Scroll Sync")
@@ -407,25 +411,25 @@ class MainWindow(QMainWindow):
 
         # 4. Find in Document
         self._btn_find = QToolButton()
-        self._btn_find.setText("🔎")
+        self._btn_find.setText("⌕")
         self._btn_find.setToolTip("Find in Document (Ctrl+F)")
         self._btn_find.clicked.connect(self._on_find_in_document)
 
         # 5. Global Search (FTS5)
         self._btn_global_search = QToolButton()
-        self._btn_global_search.setText("🌍")
+        self._btn_global_search.setText("⛶")
         self._btn_global_search.setToolTip("Global Search (Ctrl+Shift+F)")
         self._btn_global_search.clicked.connect(self._on_global_search)
 
         # 6. Command Palette
         self._btn_search = QToolButton()
-        self._btn_search.setText("🔍")
+        self._btn_search.setText(">")
         self._btn_search.setToolTip("Command Palette (Ctrl+P)")
         self._btn_search.clicked.connect(self._on_command_palette)
 
         # 7. HTML Export
         self._btn_export = QToolButton()
-        self._btn_export.setText("📤")
+        self._btn_export.setText("↑")
         self._btn_export.setToolTip("Export as HTML (Ctrl+Shift+E)")
         self._btn_export.clicked.connect(self._on_export_html)
 
@@ -446,7 +450,7 @@ class MainWindow(QMainWindow):
         self._lbl_workspace = QLabel("No workspace open")
         self._lbl_cursor = QLabel("")
         self._lbl_vim = QLabel("")
-        self._lbl_vim.setStyleSheet("font-weight: bold; color: #888; margin-right: 10px;")
+        self._lbl_vim.setObjectName("VimStatusLabel")
 
         sb = self.statusBar()
         sb.addWidget(self._lbl_workspace, 1)

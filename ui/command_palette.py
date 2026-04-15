@@ -97,33 +97,10 @@ class CommandPalette(QDialog):
         # Input Field
         self._input = QLineEdit()
         self._input.setPlaceholderText("Type to search files and commands...")
-        self._input.setStyleSheet("""
-            QLineEdit {
-                padding: 12px;
-                font-size: 14px;
-                border: none;
-                border-bottom: 1px solid #e1e4e8;
-            }
-        """)
         layout.addWidget(self._input)
         
         # Results List  
         self._results = QListWidget()
-        self._results.setStyleSheet("""
-            QListWidget {
-                border: none;
-                outline: none;
-                selection-background-color: #0366d6;
-            }
-            QListWidget::item {
-                padding: 8px 12px;
-                border-bottom: 1px solid #f6f8fa;
-            }
-            QListWidget::item:selected {
-                background-color: #0366d6;
-                color: white;
-            }
-        """)
         layout.addWidget(self._results)
         
         self.setLayout(layout)
@@ -131,6 +108,37 @@ class CommandPalette(QDialog):
         # Event-Verbindungen
         self._input.textChanged.connect(self._on_text_changed)
         self._results.itemDoubleClicked.connect(self._on_item_activated)
+    
+    def set_theme(self, theme: Any) -> None:
+        """Applies theme to the palette."""
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {theme.ui.sidebar_bg};
+                border: 1px solid {theme.ui.border};
+            }}
+            QLineEdit {{
+                padding: 12px;
+                font-size: 14px;
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+                border-bottom: 1px solid {theme.ui.border};
+            }}
+            QListWidget {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item {{
+                padding: 8px 12px;
+                border-bottom: 1px solid {theme.ui.border};
+            }}
+            QListWidget::item:selected {{
+                background-color: {theme.ui.button_bg};
+                color: {theme.preview.link};
+            }}
+        """)
     
     def _setup_shortcuts(self) -> None:
         # Enter: Item ausführen
@@ -270,9 +278,9 @@ class CommandPalette(QDialog):
         
         # Verschiedene Icons/Präfixe für verschiedene Item-Typen
         if item.is_action:
-            title = f"⚡ {item.title}"
+            title = f"> {item.title}"
         elif item.is_file:
-            title = f"📄 {item.title}"
+            title = f"• {item.title}"
         else:
             title = item.title
         
