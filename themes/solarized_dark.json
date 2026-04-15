@@ -1,0 +1,60 @@
+{
+    "name": "Solarized Dark",
+    "dark": true,
+    "editor": {
+        "background": "#002b36",
+        "foreground": "#839496",
+        "selection_bg": "#073642",
+        "selection_fg": "#93a1a1",
+        "line_number_bg": "#002b36",
+        "line_number_fg": "#586e75",
+        "current_line": "#073642",
+        "marker_added": "#859900",
+        "marker_modified": "#b58900",
+        "marker_deleted": "#dc322f",
+        "tokens": {
+            "DEFAULT": { "color": "#839496" },
+            "HEADING_1": { "color": "#268bd2", "bold": true },
+            "HEADING_2": { "color": "#268bd2", "bold": true },
+            "HEADING_3": { "color": "#268bd2", "bold": true },
+            "HEADING_4": { "color": "#268bd2", "bold": true },
+            "HEADING_5": { "color": "#268bd2", "bold": true },
+            "HEADING_6": { "color": "#268bd2", "bold": true },
+            "BOLD": { "color": "#cb4b16", "bold": true },
+            "ITALIC": { "color": "#2aa198", "italic": true },
+            "BOLD_ITALIC": { "color": "#cb4b16", "bold": true, "italic": true },
+            "INLINE_CODE": { "color": "#859900" },
+            "CODE_FENCE": { "color": "#586e75" },
+            "MERMAID_FENCE": { "color": "#d33682" },
+            "LINK_TEXT": { "color": "#268bd2" },
+            "LINK_URL": { "color": "#586e75" },
+            "WIKILINK": { "color": "#268bd2" },
+            "WIKILINK_BROKEN": { "color": "#dc322f" },
+            "BLOCKQUOTE": { "color": "#586e75", "italic": true },
+            "LIST_MARKER": { "color": "#d33682" },
+            "HR": { "color": "#073642" },
+            "FRONTMATTER": { "color": "#586e75" }
+        }
+    },
+    "ui": {
+        "sidebar_bg": "#001e26",
+        "sidebar_fg": "#839496",
+        "tab_active_bg": "#002b36",
+        "tab_active_fg": "#839496",
+        "tab_inactive_bg": "#001e26",
+        "tab_inactive_fg": "#586e75",
+        "border": "#00161d",
+        "button_bg": "#073642",
+        "button_fg": "#839496"
+    },
+    "preview": {
+        "background": "#002b36",
+        "foreground": "#839496",
+        "link": "#268bd2",
+        "heading": "#268bd2",
+        "code-bg": "#073642",
+        "border": "#586e75",
+        "syntax": "dark",
+        "mermaid": "dark"
+    }
+}

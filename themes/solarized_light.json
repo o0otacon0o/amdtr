@@ -1,0 +1,60 @@
+{
+    "name": "Solarized Light",
+    "dark": false,
+    "editor": {
+        "background": "#fdf6e3",
+        "foreground": "#657b83",
+        "selection_bg": "#eee8d5",
+        "selection_fg": "#586e75",
+        "line_number_bg": "#fdf6e3",
+        "line_number_fg": "#93a1a1",
+        "current_line": "#eee8d5",
+        "marker_added": "#859900",
+        "marker_modified": "#b58900",
+        "marker_deleted": "#dc322f",
+        "tokens": {
+            "DEFAULT": { "color": "#657b83" },
+            "HEADING_1": { "color": "#268bd2", "bold": true },
+            "HEADING_2": { "color": "#268bd2", "bold": true },
+            "HEADING_3": { "color": "#268bd2", "bold": true },
+            "HEADING_4": { "color": "#268bd2", "bold": true },
+            "HEADING_5": { "color": "#268bd2", "bold": true },
+            "HEADING_6": { "color": "#268bd2", "bold": true },
+            "BOLD": { "color": "#cb4b16", "bold": true },
+            "ITALIC": { "color": "#2aa198", "italic": true },
+            "BOLD_ITALIC": { "color": "#cb4b16", "bold": true, "italic": true },
+            "INLINE_CODE": { "color": "#859900" },
+            "CODE_FENCE": { "color": "#93a1a1" },
+            "MERMAID_FENCE": { "color": "#d33682" },
+            "LINK_TEXT": { "color": "#268bd2" },
+            "LINK_URL": { "color": "#93a1a1" },
+            "WIKILINK": { "color": "#268bd2" },
+            "WIKILINK_BROKEN": { "color": "#dc322f" },
+            "BLOCKQUOTE": { "color": "#93a1a1", "italic": true },
+            "LIST_MARKER": { "color": "#d33682" },
+            "HR": { "color": "#eee8d5" },
+            "FRONTMATTER": { "color": "#93a1a1" }
+        }
+    },
+    "ui": {
+        "sidebar_bg": "#eee8d5",
+        "sidebar_fg": "#657b83",
+        "tab_active_bg": "#fdf6e3",
+        "tab_active_fg": "#657b83",
+        "tab_inactive_bg": "#eee8d5",
+        "tab_inactive_fg": "#93a1a1",
+        "border": "#d5d0be",
+        "button_bg": "#eee8d5",
+        "button_fg": "#657b83"
+    },
+    "preview": {
+        "background": "#fdf6e3",
+        "foreground": "#657b83",
+        "link": "#268bd2",
+        "heading": "#268bd2",
+        "code-bg": "#eee8d5",
+        "border": "#d5d0be",
+        "syntax": "light",
+        "mermaid": "default"
+    }
+}

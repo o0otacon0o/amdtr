@@ -1,0 +1,60 @@
+{
+    "name": "Dracula",
+    "dark": true,
+    "editor": {
+        "background": "#282a36",
+        "foreground": "#f8f8f2",
+        "selection_bg": "#44475a",
+        "selection_fg": "#f8f8f2",
+        "line_number_bg": "#282a36",
+        "line_number_fg": "#6272a4",
+        "current_line": "#44475a",
+        "marker_added": "#50fa7b",
+        "marker_modified": "#f1fa8c",
+        "marker_deleted": "#ff5555",
+        "tokens": {
+            "DEFAULT": { "color": "#f8f8f2" },
+            "HEADING_1": { "color": "#bd93f9", "bold": true },
+            "HEADING_2": { "color": "#bd93f9", "bold": true },
+            "HEADING_3": { "color": "#bd93f9", "bold": true },
+            "HEADING_4": { "color": "#bd93f9", "bold": true },
+            "HEADING_5": { "color": "#bd93f9", "bold": true },
+            "HEADING_6": { "color": "#bd93f9", "bold": true },
+            "BOLD": { "color": "#ffb86c", "bold": true },
+            "ITALIC": { "color": "#ff79c6", "italic": true },
+            "BOLD_ITALIC": { "color": "#ffb86c", "bold": true, "italic": true },
+            "INLINE_CODE": { "color": "#50fa7b" },
+            "CODE_FENCE": { "color": "#6272a4" },
+            "MERMAID_FENCE": { "color": "#ff79c6" },
+            "LINK_TEXT": { "color": "#8be9fd" },
+            "LINK_URL": { "color": "#6272a4" },
+            "WIKILINK": { "color": "#8be9fd" },
+            "WIKILINK_BROKEN": { "color": "#ff5555" },
+            "BLOCKQUOTE": { "color": "#6272a4", "italic": true },
+            "LIST_MARKER": { "color": "#ff79c6" },
+            "HR": { "color": "#44475a" },
+            "FRONTMATTER": { "color": "#6272a4" }
+        }
+    },
+    "ui": {
+        "sidebar_bg": "#21222c",
+        "sidebar_fg": "#f8f8f2",
+        "tab_active_bg": "#282a36",
+        "tab_active_fg": "#f8f8f2",
+        "tab_inactive_bg": "#21222c",
+        "tab_inactive_fg": "#6272a4",
+        "border": "#191a21",
+        "button_bg": "#44475a",
+        "button_fg": "#f8f8f2"
+    },
+    "preview": {
+        "background": "#282a36",
+        "foreground": "#f8f8f2",
+        "link": "#8be9fd",
+        "heading": "#bd93f9",
+        "code-bg": "#44475a",
+        "border": "#6272a4",
+        "syntax": "dark",
+        "mermaid": "dark"
+    }
+}
