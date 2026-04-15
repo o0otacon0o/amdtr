@@ -168,6 +168,31 @@ class Sidebar(QWidget):
         h.addWidget(self._search_input)
         return container
 
+    def _build_tree(self) -> QTreeView:
+        self._tree = QTreeView()
+        self._tree.setModel(self._proxy)
+
+        # Enable context menu
+        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tree.customContextMenuRequested.connect(self._on_custom_context_menu)
+
+        # Show only the name column (0), hide the rest
+        self._tree.setHeaderHidden(True)
+        for col in range(1, 4):
+            self._tree.hideColumn(col)
+
+        self._tree.setAnimated(True)
+        self._tree.setUniformRowHeights(True)
+        self._tree.setWordWrap(False)
+
+        # Prevent the user from renaming files directly in the tree
+        self._tree.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
+
+        # activated fires on double-click OR Enter key
+        self._tree.activated.connect(self._on_item_activated)
+
+        return self._tree
+
     # ── Public API ────────────────────────────────────────────────────
 
     @property
