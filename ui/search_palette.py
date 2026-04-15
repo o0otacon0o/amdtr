@@ -50,33 +50,49 @@ class SearchPalette(QDialog):
         
         self._input = QLineEdit()
         self._input.setPlaceholderText("Full-text search in workspace...")
-        self._input.setStyleSheet("""
-            QLineEdit {
-                padding: 12px;
-                font-size: 14px;
-                border: none;
-                border-bottom: 1px solid #e1e4e8;
-            }
-        """)
         layout.addWidget(self._input)
         
         self._results = QListWidget()
-        self._results.setStyleSheet("""
-            QListWidget {
-                border: none;
-                outline: none;
-            }
-            QListWidget::item {
-                padding: 10px 12px;
-                border-bottom: 1px solid #f6f8fa;
-            }
-        """)
         layout.addWidget(self._results)
         
         self.setLayout(layout)
         
         self._input.textChanged.connect(self._on_text_changed)
         self._results.itemDoubleClicked.connect(self._on_item_activated)
+    
+    def set_theme(self, theme: Any) -> None:
+        """Applies theme to the palette."""
+        self._current_theme = theme
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {theme.ui.sidebar_bg};
+                border: 1px solid {theme.ui.border};
+            }}
+            QLineEdit {{
+                padding: 12px;
+                font-size: 14px;
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+                border-bottom: 1px solid {theme.ui.border};
+            }}
+            QListWidget {{
+                background-color: {theme.ui.sidebar_bg};
+                color: {theme.ui.sidebar_fg};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item {{
+                padding: 10px 12px;
+                border-bottom: 1px solid {theme.ui.border};
+            }}
+            QListWidget::item:selected {{
+                background-color: {theme.ui.button_bg};
+            }}
+        """)
+        # Refresh results to apply colors to custom widgets if open
+        if self.isVisible():
+            self._update_results()
     
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence(Qt.Key.Key_Return), self).activated.connect(self._on_item_activated)
@@ -126,7 +142,8 @@ class SearchPalette(QDialog):
             # Wir ersetzen die == Marker durch Fettdruck
             clean_excerpt = excerpt.replace("==", "<b>").replace("==", "</b>")
             
-            display_text = f"<b>{title}</b><br/><small style='color: #666;'>{clean_excerpt}</small>"
+            fg_color = self._current_theme.ui.sidebar_fg if hasattr(self, '_current_theme') else "#888"
+            display_text = f"<b>{title}</b><br/><small style='color: {fg_color}; opacity: 0.8;'>{clean_excerpt}</small>"
             
             label = QLabel(display_text)
             label.setContentsMargins(5, 2, 5, 2)

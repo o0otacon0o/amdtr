@@ -17,8 +17,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
-    QTabWidget, QWidget, QVBoxLayout, QLabel,
-    QTabBar, QMessageBox, QMenu,
+    QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QTabBar, QMessageBox, QMenu, QToolButton,
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QUrl
 from PyQt6.QtGui import QAction, QGuiApplication, QDesktopServices
@@ -37,25 +37,52 @@ class WelcomeWidget(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setSpacing(8)
+        layout.setSpacing(12)
 
         title = QLabel("amdtr")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("font-size: 32px; font-weight: 200; color: #888;")
+        title.setStyleSheet("font-size: 48px; font-weight: 100; color: #555; margin-bottom: 20px;")
 
-        shortcuts = QLabel(
-            "Open workspace:  Ctrl+Shift+O\n"
-            "Open file:           Ctrl+O\n"
-            "Command palette:  Ctrl+P"
-        )
-        shortcuts.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        shortcuts.setStyleSheet(
-            "font-family: monospace; font-size: 12px; color: #aaa; line-height: 1.8;"
-        )
+        shortcuts_container = QWidget()
+        shortcuts_layout = QVBoxLayout(shortcuts_container)
+        shortcuts_layout.setSpacing(10)
+        
+        def add_shortcut(label, keys):
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            
+            lbl = QLabel(label)
+            lbl.setStyleSheet("color: #888; font-size: 13px;")
+            
+            key_lbl = QLabel(keys)
+            key_lbl.setStyleSheet("""
+                background-color: #f0f0f0; 
+                border: 1px solid #ddd; 
+                border-radius: 4px; 
+                padding: 2px 6px; 
+                color: #555; 
+                font-family: monospace;
+                font-size: 11px;
+            """)
+            
+            row_layout.addWidget(lbl)
+            row_layout.addStretch()
+            row_layout.addWidget(key_lbl)
+            shortcuts_layout.addWidget(row)
 
+        add_shortcut("Open Workspace", "Ctrl+Shift+O")
+        add_shortcut("Open File", "Ctrl+O")
+        add_shortcut("Command Palette", "Ctrl+P")
+        add_shortcut("Global Search", "Ctrl+Shift+F")
+        add_shortcut("Toggle Sidebar", "Ctrl+B")
+
+        shortcuts_container.setFixedWidth(300)
+        
+        layout.addStretch()
         layout.addWidget(title)
-        layout.addSpacing(16)
-        layout.addWidget(shortcuts)
+        layout.addWidget(shortcuts_container)
+        layout.addStretch()
 
 
 # ── Tab widget ────────────────────────────────────────────────────────
@@ -112,10 +139,37 @@ class TabWidget(QTabWidget):
     def set_theme(self, theme: Theme) -> None:
         """Propagates the theme to all tabs."""
         self._current_theme = theme
+        
+        # 1. Update existing editors
         for i in range(self.count()):
             widget = self.widget(i)
             if isinstance(widget, EditorPreviewSplit):
                 widget.set_theme(theme)
+                
+        # 2. Update close buttons
+        for i in range(self.count()):
+            btn = self.tabBar().tabButton(i, QTabBar.ButtonPosition.RightSide)
+            if isinstance(btn, QToolButton):
+                self._style_close_button(btn, theme)
+
+    def _style_close_button(self, btn: QToolButton, theme: Theme) -> None:
+        """Applies theme-based styling to a close button."""
+        btn.setStyleSheet(f"""
+            QToolButton {{
+                border: none;
+                background: transparent;
+                font-weight: bold;
+                font-size: 14px;
+                color: {theme.ui.tab_inactive_fg};
+                margin-right: 4px;
+                margin-top: -4px; /* Pull up to center vertically */
+            }}
+            QToolButton:hover {{
+                background-color: {theme.ui.button_bg};
+                color: {theme.preview.link};
+                border-radius: 2px;
+            }}
+        """)
 
     def set_vim_mode(self, enabled: bool) -> None:
         """Enables or disables Vim mode in all open editors."""
@@ -161,6 +215,9 @@ class TabWidget(QTabWidget):
 
         idx = self.addTab(editor, path.name)
         self.setTabToolTip(idx, str(path))
+
+        # Add custom themeable close button
+        self.tabBar().setTabButton(idx, QTabBar.ButtonPosition.RightSide, self._create_close_button(idx))
 
         # Remove welcome tab when the first real file is opened
         welcome_idx = self.indexOf(self._welcome)
@@ -340,6 +397,41 @@ class TabWidget(QTabWidget):
             return
         name = editor.path().name
         self.setTabText(idx, ("● " + name) if editor.is_dirty() else name)
+
+    def _create_close_button(self, index: int) -> QToolButton:
+        """Creates a custom, themeable close button for a tab."""
+        btn = QToolButton()
+        btn.setText("×")
+        btn.setFixedSize(16, 16)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setToolTip("Close Tab")
+        
+        # Connect to close request
+        # Note: index might change, so we need to find the widget
+        widget = self.widget(index)
+        btn.clicked.connect(lambda: self._on_close_requested(self.indexOf(widget)))
+        
+        # Apply theme if available
+        if self._current_theme:
+            self._style_close_button(btn, self._current_theme)
+        else:
+            # Fallback styling
+            btn.setStyleSheet("""
+                QToolButton {
+                    border: none;
+                    background: transparent;
+                    font-weight: bold;
+                    font-size: 14px;
+                    padding: 0;
+                    margin: 0;
+                    color: #888;
+                }
+                QToolButton:hover {
+                    background-color: rgba(128, 128, 128, 0.2);
+                    border-radius: 2px;
+                }
+            """)
+        return btn
 
     def _rebuild_path_index(self) -> None:
         """
