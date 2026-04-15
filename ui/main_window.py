@@ -161,27 +161,6 @@ class MainWindow(QMainWindow):
                 background: {theme.ui.button_bg};
             }}
 
-            QTabBar::close-button {{
-                image: none;
-                subcontrol-position: right;
-                margin: 2px;
-            }}
-
-            QTabBar::close-button:hover {{
-                background: {theme.ui.button_bg};
-                border-radius: 2px;
-            }}
-
-            /* Custom X for close button */
-            QTabBar::close-button {{
-                padding: 2px;
-            }}
-            
-            /* We use a standard approach for monochrome close buttons in Qt QSS */
-            QTabBar::close-button {{
-                background-color: transparent;
-            }}
-
             /* Modern Splitter */
             QSplitter::handle {{
                 background: {theme.ui.border};

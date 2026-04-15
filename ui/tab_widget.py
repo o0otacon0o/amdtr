@@ -189,6 +189,9 @@ class TabWidget(QTabWidget):
         idx = self.addTab(editor, path.name)
         self.setTabToolTip(idx, str(path))
 
+        # Add custom themeable close button
+        self.tabBar().setTabButton(idx, QTabBar.ButtonPosition.RightSide, self._create_close_button(idx))
+
         # Remove welcome tab when the first real file is opened
         welcome_idx = self.indexOf(self._welcome)
         if welcome_idx != -1:
@@ -367,6 +370,37 @@ class TabWidget(QTabWidget):
             return
         name = editor.path().name
         self.setTabText(idx, ("● " + name) if editor.is_dirty() else name)
+
+    def _create_close_button(self, index: int) -> QToolButton:
+        """Creates a custom, themeable close button for a tab."""
+        btn = QToolButton()
+        btn.setText("×")
+        btn.setFixedSize(16, 16)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setToolTip("Close Tab")
+        
+        # Connect to close request
+        # Note: index might change, so we need to find the widget
+        widget = self.widget(index)
+        btn.clicked.connect(lambda: self._on_close_requested(self.indexOf(widget)))
+        
+        # Styling will be handled via theme propagation or default QSS
+        btn.setStyleSheet("""
+            QToolButton {
+                border: none;
+                background: transparent;
+                font-weight: bold;
+                font-size: 14px;
+                padding: 0;
+                margin: 0;
+                color: inherit;
+            }
+            QToolButton:hover {
+                background-color: rgba(128, 128, 128, 0.2);
+                border-radius: 2px;
+            }
+        """)
+        return btn
 
     def _rebuild_path_index(self) -> None:
         """
