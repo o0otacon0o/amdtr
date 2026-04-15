@@ -162,7 +162,7 @@ class TabWidget(QTabWidget):
                 font-size: 14px;
                 color: {theme.ui.tab_inactive_fg};
                 margin-right: 4px;
-                margin-top: -2px; /* Pull up to center vertically */
+                margin-top: -4px; /* Pull up to center vertically */
             }}
             QToolButton:hover {{
                 background-color: {theme.ui.button_bg};
