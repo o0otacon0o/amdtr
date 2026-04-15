@@ -13,11 +13,9 @@
 ## 🚀 Key Features
 
 *   **⚡ High-Speed Live Preview:** Real-time rendering (150ms debounced) of Markdown, Mermaid diagrams, KaTeX math, and syntax-highlighted code blocks.
-*   **🚀 Instant Visual Feedback:** Immediate splash screen during application launch for a more responsive user experience.
-*   **🏎️ Optimized Startup:** Built for speed with a non-compressed structure (`--onedir`) for near-instant cold starts.
 *   **💨 Streamlined Workspace:** Incremental batch indexing (FTS5) for lightning-fast loading of large folders. Only changed files are re-indexed based on their modification time.
 *   **🛠️ Unified Header Bar:** A streamlined UI that merges menu and toolbar into a single, space-saving element for maximum focus.
-*   **📂 Clean Projects:** No hidden `.amdtr` folders in your Markdown collections. All metadata (search index, session, and local configuration) is stored centrally in platform-standard application data folders.
+*   **📂 Clean Projects:** All metadata (search index, session, and local configuration) is stored centrally in platform-standard application data folders.
 *   **📂 Smart Management:** Integrated sidebar with file management (Rename/Delete), Wikilink support, and workspace-wide full-text search.
 *   **📑 Document Outline:** Automatic Table of Contents (ToC) generation from Markdown headings for lightning-fast navigation.
 *   **🎨 Custom Themes:** Fully skinnable UI and editor (JSON-based themes like One Dark or GitHub Light).
