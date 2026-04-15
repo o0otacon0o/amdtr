@@ -27,6 +27,7 @@
 *   **🔍 Enhanced Navigation:** Tab tooltips and status bar paths for better orientation. Right-click any tab or editor to "Reveal in Explorer".
 *   **📦 Portable Export:** One-click standalone HTML export with all assets (JS/CSS/Fonts) embedded for offline viewing.
 *   **🔗 Scroll Sync:** Optional bi-directional scrolling between editor and preview.
+*   **📋 Hover Actions:** Hover over any rendered code block or Mermaid diagram to reveal copy (text/image) and save (PNG) buttons for instant clipboard integration.
 
 ## ⌨️ Experimental Vim Mode (Opt-In)
 

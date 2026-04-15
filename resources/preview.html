@@ -474,7 +474,7 @@
                     copyBtn.className = 'action-btn';
                     copyBtn.textContent = 'Copy';
                     copyBtn.onclick = () => {
-                        const code = pre.querySelector('code').innerText;
+                        const code = pre.querySelector('code').textContent;
                         this.copyToClipboard(code, copyBtn);
                     };
 

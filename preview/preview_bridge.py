@@ -145,11 +145,17 @@ class PreviewBridge(QObject):
     def copy_to_clipboard(self, text: str) -> None:
         """
         JavaScript → Python: Copy text to clipboard.
+        Normalizes line endings for Windows if necessary.
         """
+        import sys
+        if sys.platform == "win32":
+            # Ensure CRLF line endings on Windows for better compatibility
+            text = text.replace("\r\n", "\n").replace("\n", "\r\n")
+
         from PyQt6.QtWidgets import QApplication
         clipboard = QApplication.clipboard()
         clipboard.setText(text)
-        print("[INFO] Text copied to clipboard")
+        print("[INFO] Text copied to clipboard (normalized line endings)")
 
     @pyqtSlot(str)
     def copy_image_to_clipboard(self, data_url: str) -> None:
