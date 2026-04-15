@@ -18,7 +18,7 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QTabBar, QMessageBox, QMenu,
+    QTabBar, QMessageBox, QMenu, QToolButton,
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QUrl
 from PyQt6.QtGui import QAction, QGuiApplication, QDesktopServices
