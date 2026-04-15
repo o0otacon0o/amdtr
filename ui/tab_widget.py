@@ -139,10 +139,37 @@ class TabWidget(QTabWidget):
     def set_theme(self, theme: Theme) -> None:
         """Propagates the theme to all tabs."""
         self._current_theme = theme
+        
+        # 1. Update existing editors
         for i in range(self.count()):
             widget = self.widget(i)
             if isinstance(widget, EditorPreviewSplit):
                 widget.set_theme(theme)
+                
+        # 2. Update close buttons
+        for i in range(self.count()):
+            btn = self.tabBar().tabButton(i, QTabBar.ButtonPosition.RightSide)
+            if isinstance(btn, QToolButton):
+                self._style_close_button(btn, theme)
+
+    def _style_close_button(self, btn: QToolButton, theme: Theme) -> None:
+        """Applies theme-based styling to a close button."""
+        btn.setStyleSheet(f"""
+            QToolButton {{
+                border: none;
+                background: transparent;
+                font-weight: bold;
+                font-size: 14px;
+                color: {theme.ui.tab_inactive_fg};
+                margin-right: 4px;
+                margin-top: 1px; /* Fine-tune vertical centering */
+            }}
+            QToolButton:hover {{
+                background-color: {theme.ui.button_bg};
+                color: {theme.preview.link};
+                border-radius: 2px;
+            }}
+        """)
 
     def set_vim_mode(self, enabled: bool) -> None:
         """Enables or disables Vim mode in all open editors."""
@@ -384,22 +411,26 @@ class TabWidget(QTabWidget):
         widget = self.widget(index)
         btn.clicked.connect(lambda: self._on_close_requested(self.indexOf(widget)))
         
-        # Styling will be handled via theme propagation or default QSS
-        btn.setStyleSheet("""
-            QToolButton {
-                border: none;
-                background: transparent;
-                font-weight: bold;
-                font-size: 14px;
-                padding: 0;
-                margin: 0;
-                color: inherit;
-            }
-            QToolButton:hover {
-                background-color: rgba(128, 128, 128, 0.2);
-                border-radius: 2px;
-            }
-        """)
+        # Apply theme if available
+        if self._current_theme:
+            self._style_close_button(btn, self._current_theme)
+        else:
+            # Fallback styling
+            btn.setStyleSheet("""
+                QToolButton {
+                    border: none;
+                    background: transparent;
+                    font-weight: bold;
+                    font-size: 14px;
+                    padding: 0;
+                    margin: 0;
+                    color: #888;
+                }
+                QToolButton:hover {
+                    background-color: rgba(128, 128, 128, 0.2);
+                    border-radius: 2px;
+                }
+            """)
         return btn
 
     def _rebuild_path_index(self) -> None:
