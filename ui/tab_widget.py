@@ -17,7 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
-    QTabWidget, QWidget, QVBoxLayout, QLabel,
+    QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QTabBar, QMessageBox, QMenu,
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QUrl
