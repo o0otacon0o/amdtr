@@ -184,6 +184,7 @@ class Sidebar(QWidget):
         self._tree.setAnimated(True)
         self._tree.setUniformRowHeights(True)
         self._tree.setWordWrap(False)
+        self._tree.setAllColumnsShowFocus(True)
 
         # Prevent the user from renaming files directly in the tree
         self._tree.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
@@ -241,7 +242,6 @@ class Sidebar(QWidget):
                 background-color: {theme.ui.button_bg};
             }}
             QTreeView::item:selected {{
-                background-color: {theme.ui.tab_active_bg};
                 color: {theme.preview.link};
                 font-weight: bold;
             }}
