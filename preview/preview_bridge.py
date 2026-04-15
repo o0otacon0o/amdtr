@@ -103,6 +103,78 @@ class PreviewBridge(QObject):
             js_code = f"if (window.updateBasePath) window.updateBasePath('{path}');"
             self._execute_javascript(js_code)
         
+    @pyqtSlot(str, str)
+    def save_image(self, data_url: str, suggested_name: str) -> None:
+        """
+        JavaScript → Python: Save an image from a Data URL.
+        Opens a file dialog and saves the image.
+        """
+        import base64
+        from PyQt6.QtWidgets import QFileDialog
+        from pathlib import Path
+
+        try:
+            # Extract base64 data
+            if not data_url.startswith("data:image/"):
+                print(f"[ERROR] Invalid data URL: {data_url[:50]}...")
+                return
+
+            header, encoded = data_url.split(",", 1)
+            file_ext = header.split(";")[0].split("/")[1]
+            if file_ext == "svg+xml":
+                file_ext = "svg"
+            
+            image_data = base64.b64decode(encoded)
+
+            # Open file dialog
+            file_path, _ = QFileDialog.getSaveFileName(
+                None,
+                "Save Image",
+                suggested_name if suggested_name.endswith(f".{file_ext}") else f"{suggested_name}.{file_ext}",
+                f"Images (*.{file_ext});;All Files (*)"
+            )
+
+            if file_path:
+                Path(file_path).write_bytes(image_data)
+                print(f"[INFO] Image saved to: {file_path}")
+
+        except Exception as e:
+            print(f"[ERROR] Failed to save image: {e}")
+
+    @pyqtSlot(str)
+    def copy_to_clipboard(self, text: str) -> None:
+        """
+        JavaScript → Python: Copy text to clipboard.
+        """
+        from PyQt6.QtWidgets import QApplication
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        print("[INFO] Text copied to clipboard")
+
+    @pyqtSlot(str)
+    def copy_image_to_clipboard(self, data_url: str) -> None:
+        """
+        JavaScript → Python: Copy an image from a Data URL to clipboard.
+        """
+        import base64
+        from PyQt6.QtWidgets import QApplication
+        from PyQt6.QtGui import QImage, QPixmap
+
+        try:
+            if not data_url.startswith("data:image/"):
+                return
+
+            header, encoded = data_url.split(",", 1)
+            image_data = base64.b64decode(encoded)
+            
+            image = QImage.fromData(image_data)
+            if not image.isNull():
+                clipboard = QApplication.clipboard()
+                clipboard.setImage(image)
+                print("[INFO] Image copied to clipboard")
+        except Exception as e:
+            print(f"[ERROR] Failed to copy image to clipboard: {e}")
+
     def _send_pending_markdown(self) -> None:
         """
         Sends buffered Markdown content to JavaScript.
