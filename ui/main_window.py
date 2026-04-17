@@ -14,6 +14,7 @@ from PyQt6.QtGui import QAction, QKeySequence, QPixmap
 
 from core.workspace import Workspace
 from core.session_manager import SessionManager
+from core.config_manager import ConfigManager
 from preview.exporter import HTMLExporter
 from ui.sidebar import Sidebar
 from ui.tab_widget import TabWidget
@@ -31,7 +32,8 @@ class MainWindow(QMainWindow):
         self._version = version
         self._workspace: Workspace | None = None
         self._session_manager = SessionManager(self)
-        self._settings = QSettings("amdtr", "app")
+        self._config_manager = ConfigManager()
+        self._settings = self._config_manager._settings
         self._html_exporter = HTMLExporter()
 
         # Theme System
@@ -46,6 +48,9 @@ class MainWindow(QMainWindow):
         self._build_command_palette()
         self._build_search_palette()
         self._wire_signals()
+
+        # Update recent menus initially
+        self._update_recent_menu()
 
         # Set initial theme
         self._apply_theme(self._theme_manager.active_theme())
@@ -287,6 +292,9 @@ class MainWindow(QMainWindow):
         act_open_file.triggered.connect(self._on_open_file)
         file_menu.addAction(act_open_file)
 
+        self._recent_files_menu = file_menu.addMenu("Open &Recent")
+        self._recent_workspaces_menu = file_menu.addMenu("Recent &Workspaces")
+
         file_menu.addSeparator()
 
         act_save = QAction("&Save", self)
@@ -469,6 +477,7 @@ class MainWindow(QMainWindow):
         self._sidebar.outline_item_clicked.connect(self._on_outline_item_clicked)
         self._sidebar.open_workspace_requested.connect(self._load_workspace)
         self._tabs.active_file_changed.connect(self._on_active_file_changed)
+        self._tabs.tab_added.connect(self._on_tab_added)
         self._tabs.tab_added.connect(lambda p: self._session_manager.add_tab(p))
         self._tabs.tab_removed.connect(lambda p: self._session_manager.remove_tab(p))
         self._tabs.currentChanged.connect(self._update_outline) 
@@ -478,6 +487,11 @@ class MainWindow(QMainWindow):
         self._command_palette.action_requested.connect(self._on_command_palette_action)
         self._search_palette.file_requested.connect(self._tabs.open_file)
         self._theme_manager.theme_changed.connect(self._apply_theme)
+
+    def _on_tab_added(self, path: Path) -> None:
+        """Called when a new tab is added."""
+        self._config_manager.add_recent_file(path)
+        self._update_recent_menu()
 
     def _on_outline_item_clicked(self, line: int) -> None:
         w = self._tabs.currentWidget()
@@ -676,6 +690,8 @@ class MainWindow(QMainWindow):
             self._session_manager._auto_save_timer.start(5000)
 
         self.setWindowTitle(f"amdtr — {ws.name}"); self._lbl_workspace.setText(str(ws.root)); self._settings.setValue("last_workspace", str(ws.root))
+        self._config_manager.add_recent_workspace(ws.root)
+        self._update_recent_menu()
         self._index_workspace_background()
 
     def _index_workspace_background(self) -> None:
@@ -715,3 +731,55 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.StandardButton.Cancel: event.ignore(); return
             if reply == QMessageBox.StandardButton.Save: self._tabs.save_all()
         self._settings.setValue("geometry", self.saveGeometry()); self._settings.setValue("splitter_state", self._splitter.saveState()); event.accept()
+
+    def _update_recent_menu(self) -> None:
+        """Dynamically populates the recent files and workspaces menus."""
+        # 1. Recent Files
+        self._recent_files_menu.clear()
+        recent_files = self._config_manager.config.recent_files
+        
+        if not recent_files:
+            self._recent_files_menu.addAction("No recent files").setEnabled(False)
+        else:
+            for path_str in recent_files:
+                path = Path(path_str)
+                # Show only filename, but full path in tooltip
+                act = QAction(path.name, self)
+                act.setToolTip(str(path))
+                act.triggered.connect(lambda checked, p=path: self._tabs.open_file(p))
+                self._recent_files_menu.addAction(act)
+            
+            self._recent_files_menu.addSeparator()
+            act_clear = QAction("Clear Recent Files", self)
+            act_clear.triggered.connect(self._on_clear_recent_files)
+            self._recent_files_menu.addAction(act_clear)
+
+        # 2. Recent Workspaces
+        self._recent_workspaces_menu.clear()
+        recent_ws = self._config_manager.config.recent_workspaces
+        
+        if not recent_ws:
+            self._recent_workspaces_menu.addAction("No recent workspaces").setEnabled(False)
+        else:
+            for path_str in recent_ws:
+                path = Path(path_str)
+                # Show folder name, but full path in tooltip
+                act = QAction(path.name, self)
+                act.setToolTip(str(path))
+                act.triggered.connect(lambda checked, p=path: self._load_workspace(p))
+                self._recent_workspaces_menu.addAction(act)
+            
+            self._recent_workspaces_menu.addSeparator()
+            act_clear_ws = QAction("Clear Recent Workspaces", self)
+            act_clear_ws.triggered.connect(self._on_clear_recent_workspaces)
+            self._recent_workspaces_menu.addAction(act_clear_ws)
+
+    def _on_clear_recent_files(self) -> None:
+        self._config_manager.config.recent_files = []
+        self._config_manager.save_config()
+        self._update_recent_menu()
+
+    def _on_clear_recent_workspaces(self) -> None:
+        self._config_manager.config.recent_workspaces = []
+        self._config_manager.save_config()
+        self._update_recent_menu()
