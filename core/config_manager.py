@@ -111,7 +111,7 @@ class ConfigManager:
     
     def add_recent_file(self, path: Path) -> None:
         """Adds a file to the recent files list."""
-        path_str = str(path)
+        path_str = str(path.absolute())
         
         # Remove existing entry
         if path_str in self._config.recent_files:
@@ -122,10 +122,12 @@ class ConfigManager:
         
         # Limit to max 10 entries
         self._config.recent_files = self._config.recent_files[:10]
+        self._settings.setValue("recent_files", self._config.recent_files)
+        self._settings.sync()
     
     def add_recent_workspace(self, path: Path) -> None:
         """Adds a workspace to the recent workspaces list."""
-        path_str = str(path)
+        path_str = str(path.absolute())
         
         # Remove existing entry
         if path_str in self._config.recent_workspaces:
@@ -136,6 +138,8 @@ class ConfigManager:
         
         # Limit to max 5 entries
         self._config.recent_workspaces = self._config.recent_workspaces[:5]
+        self._settings.setValue("recent_workspaces", self._config.recent_workspaces)
+        self._settings.sync()
     
     def get_workspace_config_path(self, workspace_root: Path) -> Path:
         """
