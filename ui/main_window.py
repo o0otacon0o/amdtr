@@ -27,7 +27,7 @@ from themes.schema import Theme
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, version: str = "0.0.0") -> None:
+    def __init__(self, version: str = "0.0.0", initial_files: list[str] | None = None) -> None:
         super().__init__()
         self._version = version
         self._workspace: Workspace | None = None
@@ -49,6 +49,9 @@ class MainWindow(QMainWindow):
         self._build_search_palette()
         self._wire_signals()
 
+        # Enable Drag & Drop
+        self.setAcceptDrops(True)
+
         # Update recent menus initially
         self._update_recent_menu()
 
@@ -63,6 +66,38 @@ class MainWindow(QMainWindow):
 
         # Performance: Restore session after UI is visible
         QTimer.singleShot(50, self._restore_session)
+
+        # Handle files passed via command line
+        if initial_files:
+            QTimer.singleShot(100, lambda: self._handle_initial_files(initial_files))
+
+    def _handle_initial_files(self, files: list[str]) -> None:
+        """Opens files passed via command line arguments."""
+        for file_str in files:
+            path = Path(file_str)
+            if path.exists() and path.is_file():
+                self._tabs.open_file(path)
+
+    def dragEnterEvent(self, event) -> None:
+        """Handles drag enter event for file drops."""
+        if event.mimeData().hasUrls():
+            # Check if at least one URL is a supported file type
+            valid_extensions = {'.md', '.mmd', '.txt'}
+            for url in event.mimeData().urls():
+                if Path(url.toLocalFile()).suffix.lower() in valid_extensions:
+                    event.acceptProposedAction()
+                    return
+        event.ignore()
+
+    def dropEvent(self, event) -> None:
+        """Handles drop event for file drops."""
+        urls = event.mimeData().urls()
+        valid_extensions = {'.md', '.mmd', '.txt'}
+        for url in urls:
+            path = Path(url.toLocalFile())
+            if path.exists() and path.is_file() and path.suffix.lower() in valid_extensions:
+                self._tabs.open_file(path)
+        event.acceptProposedAction()
 
     def _update_vim_status(self, status_text: str) -> None:
         """Updates the status bar label for Vim mode."""

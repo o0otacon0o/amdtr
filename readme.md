@@ -1,4 +1,4 @@
-# amdtr (Another Markdown Editor) v1.1.0
+# amdtr (Another Markdown Editor) v1.2.0
 
 ![amdtr Logo](amdtr-logo.png)
 
@@ -27,6 +27,7 @@
 *   **📦 Portable Export:** One-click standalone HTML export with all assets (JS/CSS/Fonts) embedded for offline viewing.
 *   **🔗 Scroll Sync:** Optional bi-directional scrolling between editor and preview.
 *   **📋 Hover Actions:** Hover over any rendered code block or Mermaid diagram to reveal copy (text/image) and save (PNG) buttons for instant clipboard integration.
+*   **📥 Drag & Drop:** Open Markdown files by dragging them directly into the editor window.
 
 ## ⌨️ Experimental Vim Mode (Opt-In)
 
@@ -71,7 +72,23 @@ python setup_vendor.py
 ### 4. Run application
 ```sh
 python main.py
+# Or open specific files
+python main.py path/to/file.md
 ```
+
+## 📦 Windows Context Menu Integration
+
+To open files with **amdtr** directly from the Windows Explorer context menu, you can add it to the registry.
+
+### Manual Setup
+1. Open `regedit`.
+2. Navigate to `HKEY_CLASSES_ROOT\*\shell`.
+3. Create a new key named `amdtr`.
+4. Set the `(Default)` value to `Open with amdtr`.
+5. Create a new key under `amdtr` named `command`.
+6. Set the `(Default)` value to the path of your executable followed by `%1`, for example:
+   `"C:\path\to\amdtr.exe" "%1"`
+   *(If running from source, use the python executable and script path)*
 
 ## 📦 Build Standalone Executable
 To create a standalone binary for your platform:

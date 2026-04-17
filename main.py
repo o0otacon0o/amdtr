@@ -19,7 +19,7 @@ def resource_path(relative_path: str) -> Path:
 
     return base_path / relative_path
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 def main() -> None:
     # Essential for lazy WebEngine loading
@@ -42,7 +42,9 @@ def main() -> None:
     app.setStyle("Fusion")
 
     from ui.main_window import MainWindow
-    window = MainWindow(version=__version__)
+    # Pass command line arguments (files to open)
+    initial_files = sys.argv[1:]
+    window = MainWindow(version=__version__, initial_files=initial_files)
     
     # Close native PyInstaller splash if present just before showing window
     try:
