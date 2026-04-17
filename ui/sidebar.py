@@ -38,9 +38,6 @@ class _RecursiveFilterProxy(QSortFilterProxyModel):
     """
     Proxy model with recursive filter:
     A folder is displayed if at least one child matches the filter.
-
-    Without this override, folders would be hidden when a filter is active
-    — the tree would collapse and no files could be seen.
     """
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
@@ -53,6 +50,12 @@ class _RecursiveFilterProxy(QSortFilterProxyModel):
 
         # For directories: show if any child matches
         if model.isDir(index):
+            # Optimization: If the directory hasn't been loaded yet,
+            # we accept it for now so it can be expanded and filtered later.
+            # QFileSystemModel returns 0 rowCount for unloaded dirs.
+            if model.rowCount(index) == 0:
+                return True
+                
             for i in range(model.rowCount(index)):
                 if self.filterAcceptsRow(i, index):
                     return True
@@ -87,6 +90,8 @@ class Sidebar(QWidget):
         # Model: represents the file system
         self._fs_model = QFileSystemModel()
         self._fs_model.setReadOnly(False)
+        # Ensure the model finishes loading the root before we try to use it
+        self._fs_model.directoryLoaded.connect(self._on_directory_loaded)
 
         # Proxy: sits in front of the model, handles filtering and sorting
         self._proxy = _RecursiveFilterProxy()
@@ -299,9 +304,7 @@ class Sidebar(QWidget):
         if ws is None:
             self._lbl_workspace.setText("No Workspace")
             self._lbl_workspace.setToolTip("")
-            # Important: setRootPath("") on QFileSystemModel shows all system drives.
-            # We set a path that doesn't exist or just hide the tree to keep it clean.
-            self._fs_model.setRootPath("/__non_existent_path__")
+            self._fs_model.setRootPath("")
             self._tree.setRootIndex(QModelIndex())
             self._tree.hide()
             return
@@ -310,20 +313,39 @@ class Sidebar(QWidget):
         self._lbl_workspace.setToolTip(str(ws.root))
         self._tree.show()
 
-        # setRootPath starts monitoring the directory.
+        # setRootPath starts monitoring the directory and returns the index.
+        # However, it might still take a moment to fully load.
         self._fs_model.setRootPath(str(ws.root))
         
         # Show only note files.
         self._fs_model.setNameFilters(["*.md", "*.mmd", "*.txt"])
         self._fs_model.setNameFilterDisables(False)
 
-        # IMPORTANT: Set the root index for the view.
-        # Since we use a proxy, we must map the index.
-        source_index = self._fs_model.index(str(ws.root))
-        proxy_index = self._proxy.mapFromSource(source_index)
-        self._tree.setRootIndex(proxy_index)
+        # Initial attempt to set root index
+        self._update_root_index()
+
+    def _update_root_index(self) -> None:
+        """Ensures the tree view is rooted at the current workspace."""
+        if not self._workspace:
+            return
+            
+        root_path = str(self._workspace.root)
+        source_index = self._fs_model.index(root_path)
+        
+        if source_index.isValid():
+            proxy_index = self._proxy.mapFromSource(source_index)
+            self._tree.setRootIndex(proxy_index)
+        else:
+            # If index is not yet valid, QFileSystemModel will emit directoryLoaded
+            # when it's ready, which calls this method again.
+            pass
 
     # ── Slots ─────────────────────────────────────────────────────────
+
+    def _on_directory_loaded(self, path: str) -> None:
+        """Called when QFileSystemModel finishes loading a directory."""
+        if self._workspace and path == str(self._workspace.root):
+            self._update_root_index()
 
     def _on_item_activated(self, proxy_index: QModelIndex) -> None:
         # Proxy Index → Source Index → File Path
@@ -339,6 +361,10 @@ class Sidebar(QWidget):
         # setFilterFixedString: searches for exact substring (case-insensitive
         # because we set setFilterCaseSensitivity)
         self._proxy.setFilterFixedString(text)
+        
+        # IMPORTANT: Re-apply the root index after filter change.
+        # QSortFilterProxyModel might lose the root index during resets.
+        self._update_root_index()
 
         if text:
             # When filter is active: expand entire tree so matches are visible
