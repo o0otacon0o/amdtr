@@ -743,8 +743,14 @@ class MainWindow(QMainWindow):
         else:
             for path_str in recent_files:
                 path = Path(path_str)
-                # Show only filename, but full path in tooltip
-                act = QAction(path.name, self)
+                # Show filename and parent directory on the right (\t)
+                parent_info = str(path.parent)
+                if len(parent_info) > 50:
+                    parent_info = "..." + parent_info[-47:]
+                
+                # \t right-aligns the text in many QMenu styles
+                display_text = f"{path.name}\t({parent_info})"
+                act = QAction(display_text, self)
                 act.setToolTip(str(path))
                 act.triggered.connect(lambda checked, p=path: self._tabs.open_file(p))
                 self._recent_files_menu.addAction(act)
@@ -763,8 +769,13 @@ class MainWindow(QMainWindow):
         else:
             for path_str in recent_ws:
                 path = Path(path_str)
-                # Show folder name, but full path in tooltip
-                act = QAction(path.name, self)
+                # Show folder name and full path on the right (\t)
+                parent_info = str(path.parent)
+                if len(parent_info) > 50:
+                    parent_info = "..." + parent_info[-47:]
+                
+                display_text = f"{path.name}\t({parent_info})"
+                act = QAction(display_text, self)
                 act.setToolTip(str(path))
                 act.triggered.connect(lambda checked, p=path: self._load_workspace(p))
                 self._recent_workspaces_menu.addAction(act)
