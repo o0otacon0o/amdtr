@@ -24,7 +24,7 @@
 *   **🔄 Session Restoration:** Automatically restores opened files, active tabs, and cursor positions from your last session.
 *   **📂 Recent History:** Quickly re-open your latest files and workspaces from the "File" menu.
 *   **🔍 Enhanced Navigation:** Tab tooltips and status bar paths for better orientation. Right-click any tab or editor to "Reveal in Explorer".
-*   **📦 Portable Export:** One-click standalone HTML export with all assets (JS/CSS/Fonts) embedded for offline viewing.
+*   **📦 Portable Export:** One-click standalone HTML or professional PDF export (including Mermaid and KaTeX) with embedded assets for offline viewing.
 *   **🔗 Scroll Sync:** Optional bi-directional scrolling between editor and preview.
 *   **📋 Hover Actions:** Hover over any rendered code block or Mermaid diagram to reveal copy (text/image) and save (PNG) buttons for instant clipboard integration.
 *   **📥 Drag & Drop:** Open Markdown files by dragging them directly into the editor window.

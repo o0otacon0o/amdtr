@@ -350,6 +350,12 @@ class MainWindow(QMainWindow):
         act_export_html.triggered.connect(self._on_export_html)
         file_menu.addAction(act_export_html)
 
+        act_export_pdf = QAction("Export as &PDF…", self)
+        act_export_pdf.setShortcut(QKeySequence("Ctrl+Shift+P"))
+        act_export_pdf.setStatusTip("Export current file as PDF")
+        act_export_pdf.triggered.connect(self._on_export_pdf)
+        file_menu.addAction(act_export_pdf)
+
         file_menu.addSeparator()
 
         act_quit = QAction("&Quit", self)
@@ -630,6 +636,23 @@ class MainWindow(QMainWindow):
         if path:
             if self._html_exporter.export(markdown, Path(path), title=w.path().stem):
                 self.statusBar().showMessage(f"Exported to {path}", 5000)
+
+    def _on_export_pdf(self) -> None:
+        """Handles PDF export of the current file."""
+        w = self._tabs.currentWidget()
+        if not isinstance(w, EditorPreviewSplit):
+            return
+            
+        default_name = w.path().with_suffix(".pdf").name
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export as PDF", 
+            str(Path.home() / default_name), 
+            "PDF Files (*.pdf)"
+        )
+        
+        if path:
+            w.export_pdf(path)
+            self.statusBar().showMessage(f"Exported to {path}", 5000)
 
     def _on_toggle_preview(self) -> None:
         w = self._tabs.currentWidget()

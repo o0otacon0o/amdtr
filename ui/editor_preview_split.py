@@ -328,3 +328,7 @@ class EditorPreviewSplit(QWidget):
     def preview(self) -> PreviewPanel:
         """Direct access to PreviewPanel for advanced features."""  
         return self._preview
+
+    def export_pdf(self, file_path: str) -> None:
+        """Exportiert den aktuellen Inhalt des Preview-Panels als PDF."""
+        self._preview.export_pdf(file_path)

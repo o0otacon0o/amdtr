@@ -151,3 +151,11 @@ class PreviewPanel(QWidget):
         options = self.QWebEnginePage.FindFlag(0)
         if not forward: options |= self.QWebEnginePage.FindFlag.FindBackward
         self.web_view.page().findText(text, options)
+
+    def export_pdf(self, file_path: str) -> None:
+        """Exportiert den aktuellen Inhalt der WebEngineView als PDF."""
+        if not self._web_engine_initialized:
+            return
+            
+        # printToPdf ist asynchron in QtWebEngine
+        self.web_view.page().printToPdf(file_path)
